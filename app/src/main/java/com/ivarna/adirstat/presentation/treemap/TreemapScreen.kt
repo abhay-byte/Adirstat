@@ -15,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
+import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -298,12 +300,20 @@ fun TreemapScreen(
         
         // Bottom sheet for file details
         if (showBottomSheet && uiState.selectedFile != null) {
+            val context = LocalContext.current
+            
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false }
             ) {
                 FileDetailsContent(
                     file = uiState.selectedFile!!,
-                    onDismiss = { showBottomSheet = false }
+                    onDismiss = { showBottomSheet = false },
+                    onOpen = { path -> FileActions.openFile(context, path) },
+                    onShare = { path -> FileActions.shareFile(context, path) },
+                    onDelete = { path -> 
+                        FileActions.deleteFile(context, path)
+                        showBottomSheet = false
+                    }
                 )
             }
         }
@@ -413,7 +423,10 @@ private fun FileListView(
 @Composable
 private fun FileDetailsContent(
     file: FileNode,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onOpen: (String) -> Unit,
+    onShare: (String) -> Unit,
+    onDelete: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -444,18 +457,18 @@ private fun FileDetailsContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            TextButton(onClick = { /* TODO: Open */ }) {
+            TextButton(onClick = { onOpen(file.path) }) {
                 Icon(Icons.Default.OpenInNew, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Open")
             }
-            TextButton(onClick = { /* TODO: Share */ }) {
+            TextButton(onClick = { onShare(file.path) }) {
                 Icon(Icons.Default.Share, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Share")
             }
             TextButton(
-                onClick = { /* TODO: Delete */ },
+                onClick = { onDelete(file.path) },
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
                 Icon(Icons.Default.Delete, contentDescription = null)
