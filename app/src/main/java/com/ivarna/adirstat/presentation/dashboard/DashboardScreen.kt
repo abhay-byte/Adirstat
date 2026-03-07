@@ -333,37 +333,24 @@ private fun StorageVolumeCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Storage bar - improved visibility
-            StorageBar(
-                usedBytes = volume.usedBytes,
-                freeBytes = volume.freeBytes,
-                totalBytes = volume.totalBytes,
-                usedPercentage = usedPercentage
+            // Multi-segment storage bar - shows Apps, Media, Other breakdown
+            MultiSegmentStorageBar(
+                appsBytes = volume.appsBytes,
+                mediaBytes = volume.mediaBytes,
+                otherBytes = volume.otherBytes,
+                totalBytes = volume.totalBytes
             )
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            // Labels below bar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Used ${FileSizeFormatter.format(volume.usedBytes)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Free ${FileSizeFormatter.format(volume.freeBytes)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Total ${FileSizeFormatter.format(volume.totalBytes)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            // Storage breakdown legend
+            StorageBreakdownLegend(
+                appsBytes = volume.appsBytes,
+                mediaBytes = volume.mediaBytes,
+                otherBytes = volume.otherBytes,
+                freeBytes = volume.freeBytes,
+                totalBytes = volume.totalBytes
+            )
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -388,6 +375,167 @@ private fun StorageVolumeCard(
                 Text(if (volume.lastScanTime != null) "Rescan" else "Scan Now")
             }
         }
+    }
+}
+
+@Composable
+private fun MultiSegmentStorageBar(
+    appsBytes: Long,
+    mediaBytes: Long,
+    otherBytes: Long,
+    totalBytes: Long
+) {
+    if (totalBytes <= 0) return
+    
+    // Color palette for storage segments
+    val appsColor = Color(0xFF4CAF50)     // Green - Apps
+    val mediaColor = Color(0xFFF44336)     // Red - Media
+    val otherColor = Color(0xFF2196F3)    // Blue - Other/Files
+    val freeColor = Color(0xFF9E9E9E)     // Grey - Free
+    
+    val usedBytes = appsBytes + mediaBytes + otherBytes
+    val freeBytes = totalBytes - usedBytes
+    
+    // Calculate proportions
+    val appsRatio = appsBytes.toFloat() / totalBytes.toFloat()
+    val mediaRatio = mediaBytes.toFloat() / totalBytes.toFloat()
+    val otherRatio = otherBytes.toFloat() / totalBytes.toFloat()
+    val freeRatio = freeBytes.toFloat() / totalBytes.toFloat()
+    
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Multi-segment bar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(16.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(freeColor.copy(alpha = 0.3f))
+        ) {
+            var currentOffset = 0f
+            
+            // Apps segment
+            if (appsRatio > 0.01f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(appsRatio)
+                        .offset(x = (currentOffset * 100).dp * freeRatio.coerceAtLeast(0.01f)) // Approximate
+                )
+                currentOffset += appsRatio
+            }
+        }
+        
+        // Simpler approach using row with weights
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(16.dp)
+                .clip(RoundedCornerShape(8.dp))
+        ) {
+            // Apps (green)
+            if (appsRatio > 0.001f) {
+                Box(
+                    modifier = Modifier
+                        .weight(appsRatio.coerceAtLeast(0.001f))
+                        .fillMaxHeight()
+                        .background(appsColor)
+                )
+            }
+            // Media (red)
+            if (mediaRatio > 0.001f) {
+                Box(
+                    modifier = Modifier
+                        .weight(mediaRatio.coerceAtLeast(0.001f))
+                        .fillMaxHeight()
+                        .background(mediaColor)
+                )
+            }
+            // Other files (blue)
+            if (otherRatio > 0.001f) {
+                Box(
+                    modifier = Modifier
+                        .weight(otherRatio.coerceAtLeast(0.001f))
+                        .fillMaxHeight()
+                        .background(otherColor)
+                )
+            }
+            // Free space (grey)
+            if (freeRatio > 0.001f) {
+                Box(
+                    modifier = Modifier
+                        .weight(freeRatio.coerceAtLeast(0.001f))
+                        .fillMaxHeight()
+                        .background(freeColor.copy(alpha = 0.3f))
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StorageBreakdownLegend(
+    appsBytes: Long,
+    mediaBytes: Long,
+    otherBytes: Long,
+    freeBytes: Long,
+    totalBytes: Long
+) {
+    val appsColor = Color(0xFF4CAF50)
+    val mediaColor = Color(0xFFF44336)
+    val otherColor = Color(0xFF2196F3)
+    val freeColor = Color(0xFF9E9E9E)
+    
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Apps
+        LegendItem(
+            color = appsColor,
+            label = "Apps",
+            size = appsBytes
+        )
+        // Media
+        LegendItem(
+            color = mediaColor,
+            label = "Media",
+            size = mediaBytes
+        )
+        // Other
+        LegendItem(
+            color = otherColor,
+            label = "Files",
+            size = otherBytes
+        )
+        // Free
+        LegendItem(
+            color = freeColor,
+            label = "Free",
+            size = freeBytes
+        )
+    }
+}
+
+@Composable
+private fun LegendItem(
+    color: Color,
+    label: String,
+    size: Long
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .background(color, RoundedCornerShape(2.dp))
+        )
+        Text(
+            text = "$label ${FileSizeFormatter.format(size)}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

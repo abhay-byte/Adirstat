@@ -2,6 +2,7 @@ package com.ivarna.adirstat.domain.repository
 
 import com.ivarna.adirstat.data.source.AppStorageInfo
 import com.ivarna.adirstat.data.source.ScanProgress
+import com.ivarna.adirstat.data.source.StorageBreakdown
 import com.ivarna.adirstat.data.source.StorageVolume
 import com.ivarna.adirstat.domain.model.FileNode
 import kotlinx.coroutines.flow.Flow
@@ -54,4 +55,10 @@ interface StorageRepository {
      * Get file info
      */
     suspend fun getFileInfo(filePath: String): FileNode.File?
+    
+    /**
+     * Get comprehensive storage breakdown for a volume
+     * Includes apps, media, and other breakdown from StorageStatsManager
+     */
+    suspend fun getStorageBreakdown(volumePath: String): StorageBreakdown
 }

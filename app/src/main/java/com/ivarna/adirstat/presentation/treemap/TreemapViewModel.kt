@@ -179,7 +179,18 @@ class TreemapViewModel @Inject constructor(
 
     private fun navigateTo(node: FileNode) {
         val currentBreadcrumbs = _uiState.value.breadcrumbs.toMutableList()
-        currentBreadcrumbs.add(Breadcrumb(node.name, node))
+        
+        // Check if this node already exists in breadcrumbs (to avoid duplicates)
+        val existingIndex = currentBreadcrumbs.indexOfFirst { it.node === node }
+        if (existingIndex >= 0) {
+            // Node already in breadcrumbs - truncate to this point
+            while (currentBreadcrumbs.size > existingIndex + 1) {
+                currentBreadcrumbs.removeAt(currentBreadcrumbs.size - 1)
+            }
+        } else {
+            // New node - add it
+            currentBreadcrumbs.add(Breadcrumb(node.name, node))
+        }
         
         val dirNode = node as? FileNode.Directory
         val (files, folders) = if (dirNode != null) {

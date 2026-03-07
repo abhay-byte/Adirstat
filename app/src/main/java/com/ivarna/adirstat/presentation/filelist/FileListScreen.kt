@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
+import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
 import java.text.SimpleDateFormat
 import java.util.*
@@ -27,9 +28,22 @@ fun FileListScreen(
     viewModel: FileListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedFile by remember { mutableStateOf<FileNode.File?>(null) }
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
     
     LaunchedEffect(volumePath) {
         viewModel.loadFiles(volumePath)
+    }
+    
+    // Handle file selection for bottom sheet
+    fun onFileClick(file: FileNode) {
+        if (file is FileNode.File) {
+            selectedFile = file
+            showBottomSheet = true
+        } else if (file is FileNode.Directory && onNavigateToFolder != null) {
+            onNavigateToFolder(file.path)
+        }
     }
     
     Scaffold(
@@ -168,15 +182,24 @@ fun FileListScreen(
                         ) { file ->
                             FileListItem(
                                 file = file,
-                                onClick = {
-                                    if (file is FileNode.Directory && onNavigateToFolder != null) {
-                                        onNavigateToFolder(file.path)
-                                    }
-                                }
+                                onClick = { onFileClick(file) }
                             )
                         }
                     }
                 }
+            }
+        }
+        
+        // Bottom sheet for file details
+        if (showBottomSheet && selectedFile != null) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                FileDetailBottomSheet(
+                    file = selectedFile!!,
+                    onDismiss = { showBottomSheet = false }
+                )
             }
         }
     }
@@ -284,4 +307,137 @@ private fun getFileColor(extension: String?) = when (extension?.lowercase()) {
 private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+@Composable
+private fun FileDetailBottomSheet(
+    file: FileNode.File,
+    onDismiss: () -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        // File icon and name
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = getFileIcon(file.extension),
+                contentDescription = null,
+                tint = getFileColor(file.extension),
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = file.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = FileSizeFormatter.format(file.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // File details
+        Text(
+            text = file.path,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        if (file.lastModified > 0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Modified: ${formatDate(file.lastModified)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            // Open button
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconButton(
+                    onClick = {
+                        FileActions.openFile(context, file.path)
+                        onDismiss()
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.OpenInNew,
+                        contentDescription = "Open",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = "Open",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+            
+            // Share button
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconButton(
+                    onClick = {
+                        FileActions.shareFile(context, file.path)
+                        onDismiss()
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Text(
+                    text = "Share",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+            
+            // Delete button
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconButton(
+                    onClick = {
+                        FileActions.deleteFile(context, file.path)
+                        onDismiss()
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+                Text(
+                    text = "Delete",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+    }
 }

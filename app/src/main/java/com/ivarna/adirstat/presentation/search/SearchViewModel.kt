@@ -44,6 +44,7 @@ class SearchViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 // Load files from cached scans - try internal storage first
+                // getCachedScan now automatically adds virtual Android/data nodes
                 val result = scanStorageUseCase.getCachedScan("/storage/emulated/0")
                 result.fold(
                     onSuccess = { node ->

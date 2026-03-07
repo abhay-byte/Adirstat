@@ -39,7 +39,8 @@ sealed class FileNode : Serializable {
         override val path: String,
         val children: List<FileNode>,
         override val size: Long,
-        override val lastModified: Long
+        override val lastModified: Long,
+        val isRestricted: Boolean = false  // For Android/data, Android/obb etc.
     ) : FileNode() {
         
         /**

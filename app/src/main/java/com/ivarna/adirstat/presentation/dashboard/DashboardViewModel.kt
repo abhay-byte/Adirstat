@@ -2,6 +2,7 @@ package com.ivarna.adirstat.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ivarna.adirstat.data.source.StorageBreakdown
 import com.ivarna.adirstat.data.source.StorageVolume
 import com.ivarna.adirstat.domain.usecase.ScanStorageUseCase
 import com.ivarna.adirstat.util.PermissionManager
@@ -33,13 +34,18 @@ data class StorageVolumeUi(
     val freeBytes: Long,
     val lastScanTime: Long? = null,
     val fileCount: Int = 0,
-    val folderCount: Int = 0
+    val folderCount: Int = 0,
+    // Storage breakdown from StorageStatsManager
+    val appsBytes: Long = 0L,
+    val mediaBytes: Long = 0L,
+    val otherBytes: Long = 0L
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val scanStorageUseCase: ScanStorageUseCase,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val repository: com.ivarna.adirstat.domain.repository.StorageRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -72,13 +78,23 @@ class DashboardViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { volumes ->
                         val volumeUis = volumes.map { volume ->
+                            // Get detailed breakdown using StorageStatsManager
+                            val breakdown = try {
+                                repository.getStorageBreakdown(volume.path)
+                            } catch (e: Exception) {
+                                null
+                            }
+                            
                             StorageVolumeUi(
                                 id = volume.path,
                                 name = volume.displayName,
                                 path = volume.path,
                                 totalBytes = volume.totalBytes,
                                 usedBytes = volume.usedBytes,
-                                freeBytes = volume.freeBytes
+                                freeBytes = volume.freeBytes,
+                                appsBytes = breakdown?.appsBytes ?: 0L,
+                                mediaBytes = breakdown?.mediaBytes ?: 0L,
+                                otherBytes = breakdown?.otherBytes ?: (volume.usedBytes - (breakdown?.appsBytes ?: 0L) - (breakdown?.mediaBytes ?: 0L))
                             )
                         }
                         _uiState.update { 

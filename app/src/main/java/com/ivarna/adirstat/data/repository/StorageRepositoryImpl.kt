@@ -7,6 +7,8 @@ import com.ivarna.adirstat.data.source.AppStatsDataSource
 import com.ivarna.adirstat.data.source.AppStorageInfo
 import com.ivarna.adirstat.data.source.FileSystemDataSource
 import com.ivarna.adirstat.data.source.ScanProgress
+import com.ivarna.adirstat.data.source.StorageBreakdown
+import com.ivarna.adirstat.data.source.StorageStatsDataSource
 import com.ivarna.adirstat.data.source.StorageVolume
 import com.ivarna.adirstat.data.source.StorageVolumeDataSource
 import com.ivarna.adirstat.domain.model.FileNode
@@ -24,6 +26,7 @@ class StorageRepositoryImpl @Inject constructor(
     private val fileSystemDataSource: FileSystemDataSource,
     private val storageVolumeDataSource: StorageVolumeDataSource,
     private val appStatsDataSource: AppStatsDataSource,
+    private val storageStatsDataSource: StorageStatsDataSource,
     private val scanCacheDao: ScanCacheDao,
     private val gson: Gson
 ) : StorageRepository {
@@ -106,5 +109,9 @@ class StorageRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             null
         }
+    }
+    
+    override suspend fun getStorageBreakdown(volumePath: String): StorageBreakdown {
+        return storageStatsDataSource.getStorageBreakdown(volumePath)
     }
 }

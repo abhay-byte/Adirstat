@@ -74,8 +74,9 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-026 | List Installed Apps | Query all apps via QUERY_ALL_PACKAGES with APK/data/cache sizes | 🔴 Not Started |
-| F-027 | App Size Sorting | Sort apps by total size, tap to open system App Info | 🔴 Not Started |
+| F-026 | List Installed Apps | Query all apps via QUERY_ALL_PACKAGES with APK/data/cache sizes from StorageStatsManager | 🟡 In Progress |
+| F-027 | App Size Sorting | Sort apps by total size, tap to open system App Info | 🟡 In Progress |
+| F-036 | Virtual Android/data Nodes | Display virtual nodes for Android/data and Android/obb with sizes from StorageStatsManager | 🟡 In Progress |
 
 ---
 

@@ -8,8 +8,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ivarna.adirstat.presentation.dashboard.DashboardScreen
+import com.ivarna.adirstat.presentation.permission.PermissionScreen
 
 sealed class Screen(val route: String) {
+    data object Permission : Screen("permission")
     data object Dashboard : Screen("dashboard")
     data object Treemap : Screen("treemap/{volumePath}") {
         fun createRoute(volumePath: String) = "treemap/${volumePath.encodeForRoute()}"
@@ -33,8 +35,18 @@ fun AdirstatNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Dashboard.route
+        startDestination = Screen.Permission.route
     ) {
+        composable(Screen.Permission.route) {
+            PermissionScreen(
+                onPermissionsGranted = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Permission.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        
         composable(Screen.Dashboard.route) {
             DashboardScreen(
                 onNavigateToTreemap = { path ->
@@ -71,7 +83,11 @@ fun AdirstatNavHost(
             val volumePath = backStackEntry.arguments?.getString("volumePath")?.decodeFromRoute() ?: ""
             com.ivarna.adirstat.presentation.filelist.FileListScreen(
                 volumePath = volumePath,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFolder = { folderPath ->
+                    // Navigate to treemap with the folder path
+                    navController.navigate(Screen.Treemap.createRoute(folderPath))
+                }
             )
         }
         

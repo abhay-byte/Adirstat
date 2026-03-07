@@ -35,6 +35,8 @@ object FileTypeColorMapper {
             "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso", "dmg", "apk", "xapk", "apks", "apkm" -> ARCHIVE_COLOR
             // Code
             "kt", "java", "py", "js", "ts", "html", "css", "xml", "json", "yaml", "yml", "sh", "bash", "gradle", "kts", "cpp", "c", "h", "hpp", "cs", "go", "rs", "swift" -> CODE_COLOR
+            // Files without extension - treat as unknown
+            "", "__noext__" -> OTHER_COLOR
             // Fallback
             else -> OTHER_COLOR
         }
@@ -60,21 +62,36 @@ object FileTypeColorMapper {
     fun getDominantExtension(directory: FileNode.Directory): String {
         val extensionSizes = mutableMapOf<String, Long>()
         
-        // Only check direct children (not recursive for performance)
+        // Recursively collect all file extensions in the directory tree
+        collectExtensionSizes(directory, extensionSizes)
+        
+        // Return the extension with the largest total size
+        return extensionSizes.maxByOrNull { it.value }?.key ?: ""
+    }
+    
+    /**
+     * Recursively collect file extension sizes from a directory
+     */
+    private fun collectExtensionSizes(
+        directory: FileNode.Directory,
+        extensionSizes: MutableMap<String, Long>
+    ) {
         directory.children.forEach { child ->
             when (child) {
                 is FileNode.File -> {
                     val ext = child.extension.lowercase()
-                    extensionSizes[ext] = (extensionSizes[ext] ?: 0L) + child.size
+                    if (ext.isNotEmpty()) {
+                        extensionSizes[ext] = (extensionSizes[ext] ?: 0L) + child.size
+                    } else {
+                        // Files without extension
+                        extensionSizes["__noext__"] = (extensionSizes["__noext__"] ?: 0L) + child.size
+                    }
                 }
                 is FileNode.Directory -> {
-                    // For child directories, add their size but mark as directory
-                    extensionSizes["__dir__"] = (extensionSizes["__dir__"] ?: 0L) + child.size
+                    // Recursively process subdirectories
+                    collectExtensionSizes(child, extensionSizes)
                 }
             }
         }
-        
-        // Return the extension with the largest total size
-        return extensionSizes.maxByOrNull { it.value }?.key ?: ""
     }
 }

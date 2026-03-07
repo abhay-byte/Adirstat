@@ -89,10 +89,20 @@ This document provides detailed specifications for all 13 screens in Adirstat.
 |-----------|-------------|
 | Partition Icon | Internal: `memory`, SD: `sd_card`, OTG: `usb` |
 | Title | "Internal Storage", "SD Card", "USB Drive" |
-| Usage Bar | Horizontal bar showing used (primary color) / free (surface variant) |
+| Multi-Segment Usage Bar | Horizontal bar showing Apps (green) / Media (red) / Files (blue) / Free (grey) |
 | Stats Row | "XX.X GB used of YY.Y GB" + "ZZ.Z GB free" |
+| Breakdown Legend | Color-coded legend: Apps, Media, Files, Free |
 | Last Scan | "Last scanned: [relative time]" or "Never scanned" |
 | Scan Button | TextButton "Scan" or "Rescan" |
+
+### Multi-Segment Storage Bar
+The Dashboard displays a multi-segment storage bar that shows the breakdown of storage usage:
+- **Apps (Green):** App data and cache from StorageStatsManager
+- **Media (Red):** Media files from File API scan
+- **Files (Blue):** Other user files from File API scan
+- **Free (Grey):** Available storage
+
+> **Note:** The "Apps" segment shows storage from `Android/data` and `Android/obb` directories which are restricted by Android 11+ and cannot be scanned via File API. These values come from `StorageStatsManager`.
 
 ### Empty State
 If no partitions found (rare): "No storage volumes detected"
@@ -183,6 +193,13 @@ If no partitions found (rare): "No storage volumes detected"
 - Tap block → Bottom sheet with details
 - Tap breadcrumb → Navigate up
 - Tap search → Navigate to Search Screen
+
+### Virtual Android/data Nodes
+The treemap may display virtual nodes representing `Android/data` and `Android/obb` directories. These are shown because:
+- Since Android 11, these directories are inaccessible via File API
+- Their sizes are obtained from `StorageStatsManager`
+- They appear as special nodes with a lock icon indicator
+- Tapping shows: "This folder's contents are protected by Android. Sizes shown are from system APIs."
 
 ---
 

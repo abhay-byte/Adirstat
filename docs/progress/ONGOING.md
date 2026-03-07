@@ -8,11 +8,31 @@ This document tracks tasks currently being worked on.
 
 | Task ID | Description | Feature ID | Notes |
 |---------|-------------|------------|-------|
-| - | UI Bug fixes and polish | - | Fixing reported bugs from testing |
+| - | UI Bug fixes Round 4 | - | Permission screen, treemap colors, breadcrumb, search fixes |
 
 ---
 
 ## Recently Completed (March 7, 2026)
+
+### Bug Fix Round 4 - Permissions, Treemap, Search
+- Fixed PermissionScreen - created new permission screen with sequential requests
+- Fixed Navigation.kt - Permission as start destination, FileList folder navigation
+- Fixed FileTypeColorMapper - recursive color detection for directories
+- Fixed TreemapViewModel - breadcrumb duplicate prevention
+- Fixed SearchScreen - improved empty states and icons
+- Fixed TreemapScreen - color legend padding
+
+### Bug Fix Round 3 - Storage + Android/data Restriction
+- Fixed StorageStatsDataSource with queryStatsForPackage for accurate per-app storage
+- Fixed StorageRepository to combine file scan + StorageStatsManager data
+- Fixed Dashboard to show multi-segment storage bar (Apps/Media/Files/Free)
+- Fixed Search to load from cached scan results
+- Fixed FileList navigation: folder tap navigates, file tap shows sheet
+- Added virtual Android/data nodes to treemap via ScanStorageUseCase
+- Updated PERMISSIONS.md with Android/data restriction documentation
+- Updated SDD.md with new data sources
+- Updated UI_UX_DOCUMENTATION.md with new Dashboard and Treemap sections
+- Updated FEATURES.md: F-026, F-027 now 🟡 In Progress, added F-036
 
 ### Bug Fixes Completed
 - Fixed Compose version incompatibility causing crash on CircularProgressIndicator

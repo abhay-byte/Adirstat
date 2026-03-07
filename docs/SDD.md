@@ -102,9 +102,10 @@ com.ivarna.adirstat/
 │   │       └── PreferencesDataStore.kt   # User preferences
 │   │
 │   ├── source/
-│   │   ├── FileSystemDataSource.kt        # File API scan
+│   │   ├── FileSystemDataSource.kt        # File API scan (visible files)
 │   │   ├── MediaStoreDataSource.kt        # MediaStore fallback
-│   │   └── StorageStatsDataSource.kt     # StorageStatsManager
+│   │   ├── StorageStatsDataSource.kt      # StorageStatsManager for accurate partition & app stats
+│   │   └── AppStatsDataSource.kt          # Per-app storage via PackageManager
 │   │
 │   └── repository/
 │       ├── StorageRepositoryImpl.kt

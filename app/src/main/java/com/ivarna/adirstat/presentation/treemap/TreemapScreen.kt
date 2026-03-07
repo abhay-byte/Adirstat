@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.width
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
 import com.ivarna.adirstat.util.FileActions
@@ -282,9 +283,9 @@ fun TreemapScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         LegendItem(color = 0xFF4CAF50, label = "Images")
                         LegendItem(color = 0xFFF44336, label = "Video")
@@ -293,6 +294,8 @@ fun TreemapScreen(
                         LegendItem(color = 0xFF795548, label = "Archives")
                         LegendItem(color = 0xFF00BCD4, label = "Code")
                         LegendItem(color = 0xFF607D8B, label = "Other")
+                        // Extra padding at end for scroll
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
                 }
             }

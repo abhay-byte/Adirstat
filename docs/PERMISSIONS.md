@@ -60,6 +60,46 @@
 - **If Denied:** App uses MediaStore fallback with limited results
 - **Play Store:** Requires Permissions Declaration Form (see compliance section)
 
+### ⚠️ ANDROID/DATA AND ANDROID/OBB RESTRICTION (API 11+)
+
+> **Critical:** Even with `MANAGE_EXTERNAL_STORAGE` granted, Android 11+ (API 30+) implements a kernel-level security restriction that blocks access to the `Android/data` and `Android/obb` directories for ALL third-party apps, regardless of permissions.
+
+- **What this means:**
+  - Apps cannot see files in `/storage/emulated/0/Android/data/` or `/storage/emulated/0/Android/obb/`
+  - This is a **kernel-level restriction** (SELinux policy), NOT a permission issue
+  - Even file manager apps cannot access these directories
+  - This restriction was introduced in Android 11 (API 30) and cannot be bypassed
+
+- **Impact on Adirstat:**
+  - Users will see a discrepancy between storage reported by system settings vs. what Adirstat can scan
+  - System settings show all storage including `Android/data` and `Android/obb`
+  - Adirstat can only show files outside these protected directories
+
+- **Workaround implemented in Adirstat:**
+  - Use `StorageStatsManager` to get accurate partition-level storage statistics
+  - Display multi-segment storage bar showing Apps vs. Media vs. Other
+  - Show estimated "Apps" storage from package manager
+  - Add virtual "Android/data" node in treemap with explanation
+  - Explain the limitation to users in the UI
+
+- **Code pattern to handle this:**
+```kotlin
+// Check if a directory is in the restricted Android/data or Android/obb path
+fun isRestrictedPath(path: String): Boolean {
+    val restrictedPaths = listOf(
+        "/Android/data",
+        "/Android/obb"
+    )
+    return restrictedPaths.any { path.contains(it) }
+}
+
+// Use StorageStatsManager for accurate partition stats when file access is limited
+val storageStatsManager = context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+val uuid = StorageManager.UUID_DEFAULT
+val totalBytes = storageStatsManager.getTotalBytes(uuid)
+val freeBytes = storageStatsManager.getFreeBytes(uuid)
+```
+
 ### READ_MEDIA_IMAGES (API 33+)
 
 ```xml
