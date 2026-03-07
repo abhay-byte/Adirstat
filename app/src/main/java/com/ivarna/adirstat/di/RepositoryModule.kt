@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.ivarna.adirstat.data.repository.StorageRepositoryImpl
 import com.ivarna.adirstat.domain.repository.StorageRepository
+import com.ivarna.adirstat.util.TreemapLayoutEngine
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -31,6 +32,11 @@ abstract class RepositoryModule {
             return GsonBuilder()
                 .setLenient()
                 .create()
+        }
+
+        @Provides
+        fun provideTreemapLayoutEngine(): TreemapLayoutEngine {
+            return TreemapLayoutEngine
         }
     }
 }
