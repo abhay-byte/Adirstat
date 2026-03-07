@@ -1,0 +1,17 @@
+# Fastlane Plugins for Adirstat
+# Uncomment the plugins you need
+
+# Firebase App Distribution
+# gem "fastlane-plugin-firebase_app_distribution"
+
+# Android version management
+# gem "fastlane-plugin-versioning_android"
+
+# Changelog management
+# gem "fastlane-plugin-changelog"
+
+# Google Play publish
+# gem "fastlane-plugin-google_play_generic"
+
+# Firebase Crashlytics
+# gem "fastlane-plugin-firebase_crashlytics"

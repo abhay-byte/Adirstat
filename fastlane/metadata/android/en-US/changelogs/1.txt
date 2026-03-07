@@ -1,0 +1,11 @@
+Initial release of Adirstat.
+
+• Storage partition overview (internal, SD card, OTG)
+• Interactive treemap visualization of all files and folders
+• Large files list sorted by size
+• File type breakdown by extension
+• Duplicate file detection
+• Per-app storage stats
+• Search with wildcard and regex support
+• Export scan results to CSV
+• Fully offline — no account, no tracking

@@ -1,0 +1,34 @@
+<b>Finally know exactly what's consuming your Android storage.</b>
+
+Adirstat is a powerful disk space analyzer that works just like WizTree on Windows or Disk Inventory X on Mac. It scans your entire device storage and shows you exactly which files and folders are taking up space — with beautiful visual treemaps and detailed lists.
+
+<b>Key Features:</b>
+<ul>
+<li><b>Interactive Treemap Visualization</b> — See your storage as a visual map where larger files appear as bigger blocks. Color-coded by file type for instant understanding.</li>
+<li><b>All Partitions Supported</b> — Scans internal storage, SD cards, and USB OTG drives. No storage volume left unexplored.</li>
+<li><b>Large Files List</b> — Instantly see your biggest files sorted by size. Find and remove those multi-gigabyte videos and old APKs.</li>
+<li><b>Duplicate Detection</b> — Find duplicate files wasting space. Uses intelligent name+size matching with optional MD5 verification.</li>
+<li><b>File Type Breakdown</b> — See exactly how much space images, videos, audio, documents, and other file types consume.</li>
+<li><b>Per-App Storage Stats</b> — View how much storage each installed app uses (APK, data, and cache). Great for identifying space-hungry apps.</li>
+<li><b>Powerful Search</b> — Find specific files with wildcard patterns (like *.mp4) or regular expressions. Filter by size and date.</li>
+<li><b>Fully Offline</b> — No internet connection required. No account needed. No data ever leaves your device.</li>
+<li><b>Export to CSV</b> — Export your scan results for further analysis or to share with others.</li>
+<li><b>Scan History</b> — Track how your storage changes over time. Compare scans to see what's grown.</li>
+</ul>
+
+<b>How It Works:</b>
+Adirstat performs a recursive scan of your storage, calculating the size of every file and folder. It then presents this data as an interactive treemap — a visualization method where each file or folder is represented as a rectangle sized proportionally to its storage consumption. Tap any block to drill down into folders, see details, or delete files.
+
+<b>Why We Need Full Storage Access:</b>
+To show you exactly what's using your storage, Adirstat needs permission to access all files on your device (MANAGE_EXTERNAL_STORAGE). This is similar to how file manager apps work. We never use this permission to upload or share your data — it's only used to analyze and display storage information. Your data stays on your device, always.
+
+<b>Privacy First:</b>
+<ul>
+<li>No network permissions — zero data can leave your device</li>
+<li>No account required</li>
+<li>No ads, ever</li>
+<li>No tracking or analytics</li>
+<li>Open source — verifiable by anyone</li>
+</ul>
+
+<b>Download Adirstat now and finally take control of your Android storage!</b>

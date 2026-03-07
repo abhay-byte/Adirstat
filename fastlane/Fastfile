@@ -1,0 +1,277 @@
+# Adirstat Fastfile
+# CI/CD automation for Adirstat Android app
+
+default_platform(:android)
+
+platform :android do
+  # ==========================================
+  # Lane: test
+  # Runs unit tests via Gradle
+  # ==========================================
+  desc "Run unit tests via Gradle"
+  lane :test do
+    gradle(
+      task: "test",
+      gradle_properties: {
+        "org.gradle.jvmargs" => "-Xmx2048m -XX:MaxMetaspaceSize=512m"
+      }
+    )
+  end
+
+  # ==========================================
+  # Lane: lint
+  # Runs Android Lint analysis
+  # ==========================================
+  desc "Run Android Lint analysis"
+  lane :lint do
+    gradle(
+      task: "lint",
+      build_type: "Debug"
+    )
+  end
+
+  # ==========================================
+  # Lane: build_debug
+  # Assembles debug APK
+  # ==========================================
+  desc "Assemble debug APK"
+  lane :build_debug do
+    gradle(
+      task: "assembleDebug",
+      gradle_properties: {
+        "org.gradle.jvmargs" => "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
+        "android.useAndroidX" => "true",
+        "android.enableJetifier" => "false"
+      }
+    )
+
+    # Output location
+    apk_path = lane_context[SharedValues::APK_PATH]
+    puts("✅ Debug APK built: #{apk_path}")
+  end
+
+  # ==========================================
+  # Lane: build_release
+  # Assembles signed release AAB
+  # ==========================================
+  desc "Assemble signed release AAB"
+  lane :build_release do
+    # Check for required environment variables
+    unless ENV["KEYSTORE_FILE"] && ENV["KEYSTORE_PASSWORD"] && ENV["KEY_ALIAS"] && ENV["KEY_PASSWORD"]
+      UI.user_error!("Missing signing config. Required env vars: KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD")
+    end
+
+    # Create signing config file
+    signing_config_file = "signing.properties"
+    File.write(signing_config_file, "storeFile=#{ENV['KEYSTORE_FILE']}\nstorePassword=#{ENV['KEYSTORE_PASSWORD']}\nkeyAlias=#{ENV['KEY_ALIAS']}\nkeyPassword=#{ENV['KEY_PASSWORD']}\n")
+
+    begin
+      gradle(
+        task: "assembleRelease",
+        gradle_properties: {
+          "org.gradle.jvmargs" => "-Xmx4096m -XX:MaxMetaspaceSize=1024m",
+          "android.useAndroidX" => "true",
+          "android.enableJetifier" => "false"
+        }
+      )
+
+      # Output location
+      aab_path = lane_context[SharedValues::AAB_PATH]
+      puts("✅ Release AAB built: #{aab_path}")
+    ensure
+      # Clean up signing config
+      File.delete(signing_config_file) if File.exist?(signing_config_file)
+    end
+  end
+
+  # ==========================================
+  # Lane: deploy_internal
+  # Build release and upload to Play Store internal track
+  # ==========================================
+  desc "Build release AAB and upload to Play Store internal track"
+  lane :deploy_internal do
+    # Run tests first
+    test
+    lint
+
+    # Build release
+    build_release
+
+    # Upload to Play Store
+    aab_path = lane_context[SharedValues::AAB_PATH]
+    upload_to_play_store(
+      package_name: "com.ivarna.adirstat",
+      track: "internal",
+      aab: aab_path,
+      skip_upload_changelogs: false,
+      changelog: File.read("fastlane/metadata/android/en-US/changelogs/1.txt")
+    )
+
+    puts("✅ Deployed to internal track")
+  end
+
+  # ==========================================
+  # Lane: deploy_alpha
+  # Upload to Play Store alpha track
+  # ==========================================
+  desc "Upload to Play Store alpha track"
+  lane :deploy_alpha do
+    test
+    lint
+    build_release
+
+    aab_path = lane_context[SharedValues::AAB_PATH]
+    upload_to_play_store(
+      package_name: "com.ivarna.adirstat",
+      track: "alpha",
+      aab: aab_path,
+      skip_upload_changelogs: false
+    )
+
+    puts("✅ Deployed to alpha track")
+  end
+
+  # ==========================================
+  # Lane: deploy_beta
+  # Upload to Play Store beta track
+  # ==========================================
+  desc "Upload to Play Store beta track"
+  lane :deploy_beta do
+    test
+    lint
+    build_release
+
+    aab_path = lane_context[SharedValues::AAB_PATH]
+    upload_to_play_store(
+      package_name: "com.ivarna.adirstat",
+      track: "beta",
+      aab: aab_path,
+      skip_upload_changelogs: false
+    )
+
+    puts("✅ Deployed to beta track")
+  end
+
+  # ==========================================
+  # Lane: deploy_production
+  # Upload to Play Store production track
+  # ==========================================
+  desc "Upload to Play Store production track with confirmation"
+  lane :deploy_production do
+    # Confirm deployment
+    UI.confirm("Are you sure you want to deploy to production?")
+
+    test
+    lint
+    build_release
+
+    aab_path = lane_context[SharedValues::AAB_PATH]
+    upload_to_play_store(
+      package_name: "com.ivarna.adirstat",
+      track: "production",
+      aab: aab_path,
+      skip_upload_changelogs: false,
+      release_status: "completed"
+    )
+
+    # Send notification
+    if ENV["SLACK_WEBHOOK_URL"]
+      send_slack_notification(message: "🎉 Adirstat v#{get_version_name} deployed to production!")
+    end
+
+    puts("✅ Deployed to production track")
+  end
+
+  # ==========================================
+  # Lane: deploy_fdroid
+  # Run lint + test + create git tag for F-Droid
+  # ==========================================
+  desc "Run lint + test + create git tag for F-Droid"
+  lane :deploy_fdroid do
+    test
+    lint
+
+    # Get version from gradle
+    version_name = get_version_name
+    version_code = get_version_code
+
+    # Commit version bump if needed
+    git_add(path: ".")
+    git_commit(message: "chore: version bump to #{version_name} (#{version_code})")
+
+    # Create git tag
+    add_git_tag(tag: "v#{version_name}")
+
+    # Push tag
+    push_git_tags
+
+    puts("✅ F-Droid release tag v#{version_name} created")
+    puts("📝 F-Droid will automatically build from the v#{version_name} tag")
+  end
+
+  # ==========================================
+  # Lane: increment_version
+  # Bump versionCode in build.gradle.kts
+  # ==========================================
+  desc "Bump versionCode and create git tag"
+  lane :increment_version do
+    # Get current version
+    current_version_code = get_version_code
+    new_version_code = current_version_code + 1
+
+    # Update version in gradle
+    increment_version_code(
+      gradle_file: "app/build.gradle.kts",
+      version_code: new_version_code
+    )
+
+    # Commit
+    git_add(path: "app/build.gradle.kts")
+    git_commit(message: "chore: bump versionCode to #{new_version_code}")
+
+    # Create tag
+    version_name = get_version_name
+    add_git_tag(tag: "v#{version_name}")
+
+    puts("✅ Version bumped to #{version_name} (#{new_version_code})")
+  end
+
+  # ==========================================
+  # Lane: send_slack_notification
+  # Post deployment success to Slack
+  # ==========================================
+  desc "Post deployment success to Slack"
+  lane :send_slack_notification do
+    unless ENV["SLACK_WEBHOOK_URL"]
+      UI.user_error!("SLACK_WEBHOOK_URL environment variable not set")
+    end
+
+    message = ENV["MESSAGE"] || "Adirstat deployment completed successfully!"
+
+    slack(
+      message: message,
+      slack_url: ENV["SLACK_WEBHOOK_URL"],
+      success: true
+    )
+  end
+end
+
+# ==========================================
+# Helper Functions
+# ==========================================
+
+# Get version name from gradle
+def get_version_name
+  gradle(
+    task: "printVersionName",
+    quiet: true
+  ).strip
+end
+
+# Get version code from gradle
+def get_version_code
+  gradle(
+    task: "printVersionCode",
+    quiet: true
+  ).strip.to_i
+end
