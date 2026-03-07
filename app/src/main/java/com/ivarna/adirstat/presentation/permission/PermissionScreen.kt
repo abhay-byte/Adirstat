@@ -3,6 +3,7 @@ package com.ivarna.adirstat.presentation.permission
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,9 +35,18 @@ fun PermissionScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     
-    // Check permission states
+    // Use SharedPreferences to track first launch - always show permission screen on first run
+    val prefs = remember {
+        context.getSharedPreferences("adirstat_prefs", Context.MODE_PRIVATE)
+    }
+    var hasVisitedPermission by remember { mutableStateOf(prefs.getBoolean("permission_screen_visited", false)) }
+    
+    // Check permission states - but only use for UI display, not auto-navigation
     var hasManageStorage by remember { mutableStateOf(checkManageStoragePermission()) }
     var hasUsageAccess by remember { mutableStateOf(checkUsageStatsPermission(context)) }
+    
+    // Always show permission screen first time - check if already visited and permissions granted
+    val shouldSkipPermission = hasVisitedPermission && hasManageStorage
     
     // Launchers for settings intents
     val manageStorageLauncher = rememberLauncherForActivityResult(
@@ -53,15 +63,20 @@ fun PermissionScreen(
         hasUsageAccess = checkUsageStatsPermission(context)
     }
     
-    // Re-check permissions when resuming from Settings
-    DisposableEffect(lifecycleOwner) {
+    // Re-check permissions when resuming from Settings - only skip if already visited and granted
+    DisposableEffect(lifecycleOwner, shouldSkipPermission) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
+            if (event == Lifecycle.Event.ON_RESUME && shouldSkipPermission) {
                 hasManageStorage = checkManageStoragePermission()
                 hasUsageAccess = checkUsageStatsPermission(context)
-                // Auto-navigate if permissions granted
+                // Auto-navigate if permissions granted and already visited
                 if (hasManageStorage) {
+                    // Save that user has been through permission screen
+                    prefs.edit().putBoolean("permission_screen_visited", true).apply()
                     onPermissionsGranted()
+                } else {
+                    // Permission revoked - reset the visited flag
+                    prefs.edit().putBoolean("permission_screen_visited", false).apply()
                 }
             }
         }
@@ -160,7 +175,11 @@ fun PermissionScreen(
         
         // Continue button
         Button(
-            onClick = { onPermissionsGranted() },
+            onClick = {
+                // Save that user has been through permission screen
+                prefs.edit().putBoolean("permission_screen_visited", true).apply()
+                onPermissionsGranted()
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (hasManageStorage)
