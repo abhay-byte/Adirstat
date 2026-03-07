@@ -9,7 +9,7 @@ This document contains all tasks to be completed for Adirstat.
 | Task ID | Description | Feature ID | Status |
 |---------|-------------|------------|--------|
 | TASK-000 | Project documentation initialized | - | ✅ Complete |
-| TASK-001 | Project scaffold (Hilt, Room, Compose, Navigation, DataStore setup) | - | 🔴 Not Started |
+| TASK-001 | Project scaffold (Hilt, Room, Compose, Navigation, DataStore setup) | - | ✅ Complete |
 | TASK-002 | PermissionManager.kt — full multi-API-level permission logic | - | 🔴 Not Started |
 | TASK-003 | StorageVolume enumeration using StorageManager | F-001 | 🔴 Not Started |
 | TASK-004 | FileSystemDataSource recursive scan with coroutine + Flow | F-006 | 🔴 Not Started |
@@ -20,7 +20,7 @@ This document contains all tasks to be completed for Adirstat.
 | TASK-009 | Treemap Canvas renderer in Compose | F-013 | 🔴 Not Started |
 | TASK-010 | Unit tests for TreemapLayoutEngine | F-013 | 🔴 Not Started |
 | TASK-011 | Unit tests for ScanStorageUseCase | F-006 | 🔴 Not Started |
-| TASK-012 | Fastlane setup + all lanes | - | 🔴 Not Started |
+| TASK-012 | Fastlane setup + all lanes | - | ✅ Complete |
 | TASK-013 | Google Play Permissions Declaration Form — document requirement for MANAGE_EXTERNAL_STORAGE and QUERY_ALL_PACKAGES | - | 🔴 Not Started |
 
 ---
@@ -113,7 +113,7 @@ This document contains all tasks to be completed for Adirstat.
 
 | Category | Tasks | Complete | Not Started |
 |----------|-------|----------|------------|
-| Setup | 13 | 1 | 12 |
+| Setup | 13 | 2 | 11 |
 | Partition & Overview | 5 | 0 | 5 |
 | Scanning Engine | 7 | 0 | 7 |
 | Treemap Visualization | 5 | 0 | 5 |
