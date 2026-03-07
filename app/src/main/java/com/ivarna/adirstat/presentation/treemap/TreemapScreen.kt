@@ -12,8 +12,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,6 +37,9 @@ fun TreemapScreen(
     LaunchedEffect(volumePath) {
         viewModel.loadTreemap(volumePath)
     }
+    
+    // Calculate if zoomed
+    val isZoomed = uiState.zoomScale != 1f || uiState.zoomOffset != Offset.Zero
     
     Scaffold(
         topBar = {
@@ -61,17 +66,32 @@ fun TreemapScreen(
                     }
                 },
                 actions = {
-                    // Toggle list/treemap view
+                    // Zoom controls - show only when zoomed
+                    if (isZoomed) {
+                        IconButton(onClick = { viewModel.resetZoom() }) {
+                            Icon(
+                                imageVector = Icons.Default.ZoomOutMap,
+                                contentDescription = "Reset zoom",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    
+                    // Toggle list/treemap view - Grid icon for treemap
                     IconButton(onClick = { showListView = !showListView }) {
                         Icon(
-                            imageVector = if (showListView) Icons.Default.ViewModule else Icons.Default.List,
+                            imageVector = if (showListView) Icons.Default.GridView else Icons.Default.FormatListBulleted,
                             contentDescription = if (showListView) "Treemap View" else "List View",
                             tint = if (showListView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
+                    
+                    // File list button
                     IconButton(onClick = onNavigateToFileList) {
                         Icon(Icons.Default.List, contentDescription = "File List")
                     }
+                    
+                    // Refresh
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
@@ -84,11 +104,12 @@ fun TreemapScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Info bar with distinct background
+            // Info bar with distinct background - Bug 6 fix
             if (uiState.currentNode != null) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = 2.dp
                 ) {
                     Row(
                         modifier = Modifier
@@ -99,7 +120,7 @@ fun TreemapScreen(
                         Text(
                             text = "Total: ${FileSizeFormatter.format(uiState.currentNode!!.size)}",
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = "${uiState.fileCount} files, ${uiState.folderCount} folders",
@@ -108,6 +129,7 @@ fun TreemapScreen(
                         )
                     }
                 }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             }
             
             when {
@@ -189,28 +211,39 @@ fun TreemapScreen(
                     }
                 }
                 else -> {
-                    // Treemap or List view
+                    // Treemap or List view - use weight to fill remaining space - Bug 1a fix
                     if (showListView) {
                         // List view
                         FileListView(
                             directory = uiState.currentNode as FileNode.Directory,
-                            onItemClick = { node -> viewModel.selectFile(node); showBottomSheet = true },
-                            modifier = Modifier.fillMaxSize()
+                            onItemClick = { node -> 
+                                viewModel.selectFile(node)
+                                showBottomSheet = true 
+                            },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f)
                         )
                     } else {
-                        // Treemap view
+                        // Treemap view - fill remaining space
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .weight(1f)
                                 .padding(8.dp)
+                                .onSizeChanged { size ->
+                                    viewModel.updateCanvasSize(size.width.toFloat(), size.height.toFloat())
+                                }
                         ) {
                             val dirNode = uiState.currentNode as FileNode.Directory
                             TreemapView(
                                 fileNode = dirNode,
                                 rects = uiState.treemapRects,
+                                zoomScale = uiState.zoomScale,
+                                zoomOffset = uiState.zoomOffset,
                                 onItemClick = { node ->
-                                    if (node is FileNode.Directory) {
-                                        viewModel.onBlockClick(
+                                    when (node) {
+                                        is FileNode.Directory -> viewModel.onBlockClick(
                                             com.ivarna.adirstat.util.TreemapRect(
                                                 node = node,
                                                 x = 0f,
@@ -219,11 +252,18 @@ fun TreemapScreen(
                                                 height = 0f
                                             )
                                         )
+                                        is FileNode.File -> {
+                                            viewModel.selectFile(node)
+                                            showBottomSheet = true
+                                        }
                                     }
                                 },
                                 onItemLongClick = { node ->
                                     viewModel.selectFile(node)
                                     showBottomSheet = true
+                                },
+                                onTransformGesture = { centroid, pan, zoom ->
+                                    viewModel.onTransformGesture(centroid, pan, zoom)
                                 }
                             )
                         }
@@ -248,25 +288,24 @@ fun TreemapScreen(
                         LegendItem(color = 0xFFF44336, label = "Video")
                         LegendItem(color = 0xFF9C27B0, label = "Audio")
                         LegendItem(color = 0xFFFF9800, label = "Docs")
-                        LegendItem(color = 0xFF795548, label = "Apps")
+                        LegendItem(color = 0xFF795548, label = "Archives")
+                        LegendItem(color = 0xFF00BCD4, label = "Code")
                         LegendItem(color = 0xFF607D8B, label = "Other")
                     }
                 }
             }
         }
-    }
-    
-    // Bottom sheet for file details
-    if (showBottomSheet && uiState.selectedFile != null) {
-        ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false }
-        ) {
-            FileDetailsContent(
-                file = uiState.selectedFile!!,
-                onDelete = { /* Delete file */ showBottomSheet = false },
-                onShare = { /* Share file */ },
-                onOpen = { /* Open file */ }
-            )
+        
+        // Bottom sheet for file details
+        if (showBottomSheet && uiState.selectedFile != null) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false }
+            ) {
+                FileDetailsContent(
+                    file = uiState.selectedFile!!,
+                    onDismiss = { showBottomSheet = false }
+                )
+            }
         }
     }
 }
@@ -277,32 +316,25 @@ private fun BreadcrumbRow(
     onBreadcrumbClick: (Int) -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.horizontalScroll(rememberScrollState())
     ) {
         breadcrumbs.forEachIndexed { index, crumb ->
+            val isLast = index == breadcrumbs.lastIndex
+            
             if (index > 0) {
                 Text(
-                    text = " > ",
+                    " › ",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
-            val isLast = index == breadcrumbs.lastIndex
-            
             Text(
                 text = crumb.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isLast) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                fontWeight = if (isLast) FontWeight.Medium else FontWeight.Normal,
-                textDecoration = if (isLast) TextDecoration.None else TextDecoration.Underline,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (isLast) FontWeight.Bold else FontWeight.Normal,
+                color = if (isLast) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = if (!isLast) {
@@ -317,16 +349,19 @@ private fun BreadcrumbRow(
 
 @Composable
 private fun LegendItem(color: Long, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
         Surface(
             modifier = Modifier.size(12.dp),
-            color = androidx.compose.ui.graphics.Color(color),
-            shape = MaterialTheme.shapes.extraSmall
+            color = Color(color),
+            shape = MaterialTheme.shapes.small
         ) {}
-        Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -341,7 +376,7 @@ private fun FileListView(
         directory.children.sortedByDescending { it.size } 
     }
     
-    androidx.compose.foundation.lazy.LazyColumn(
+    LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
@@ -349,28 +384,26 @@ private fun FileListView(
             items = sortedItems,
             key = { item -> item.path }
         ) { item ->
-            val itemNode = item
             ListItem(
-                headlineContent = { Text(itemNode.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                supportingContent = { Text(FileSizeFormatter.format(itemNode.size)) },
+                headlineContent = { Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                supportingContent = { Text(FileSizeFormatter.format(item.size)) },
                 leadingContent = {
                     Icon(
-                        imageVector = if (itemNode is FileNode.Directory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
+                        imageVector = if (item is FileNode.Directory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = if (item is FileNode.Directory) Color(0xFF5C7A99) else MaterialTheme.colorScheme.primary
                     )
                 },
                 trailingContent = {
-                    val percentage = if (directory.size > 0) {
-                        (itemNode.size.toFloat() / directory.size * 100).toInt()
-                    } else 0
-                    Text(
-                        text = "$percentage%",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (item is FileNode.Directory) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 },
-                modifier = Modifier.clickable { onItemClick(itemNode) }
+                modifier = Modifier.clickable { onItemClick(item) }
             )
             HorizontalDivider()
         }
@@ -380,77 +413,50 @@ private fun FileListView(
 @Composable
 private fun FileDetailsContent(
     file: FileNode,
-    onDelete: () -> Unit,
-    onShare: () -> Unit,
-    onOpen: () -> Unit
+    onDismiss: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = when (file) {
-                    is FileNode.File -> Icons.Default.InsertDriveFile
-                    is FileNode.Directory -> Icons.Default.Folder
-                },
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = file.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = FileSizeFormatter.format(file.size),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        if (file is FileNode.File) {
-            Text(
-                text = file.path,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        Text(
+            text = file.name,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Size: ${FileSizeFormatter.format(file.size)}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Path: ${file.path}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         
         Spacer(modifier = Modifier.height(24.dp))
         
+        // Action buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            TextButton(onClick = onOpen) {
+            TextButton(onClick = { /* TODO: Open */ }) {
                 Icon(Icons.Default.OpenInNew, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Open")
             }
-            TextButton(onClick = onShare) {
+            TextButton(onClick = { /* TODO: Share */ }) {
                 Icon(Icons.Default.Share, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Share")
             }
             TextButton(
-                onClick = onDelete,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
+                onClick = { /* TODO: Delete */ },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
                 Icon(Icons.Default.Delete, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))

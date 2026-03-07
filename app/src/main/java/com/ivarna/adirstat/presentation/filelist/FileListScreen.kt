@@ -23,6 +23,7 @@ import java.util.*
 fun FileListScreen(
     volumePath: String,
     onNavigateBack: () -> Unit,
+    onNavigateToFolder: ((String) -> Unit)? = null,
     viewModel: FileListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -167,7 +168,11 @@ fun FileListScreen(
                         ) { file ->
                             FileListItem(
                                 file = file,
-                                onClick = { /* Navigate to details or drill down */ }
+                                onClick = {
+                                    if (file is FileNode.Directory && onNavigateToFolder != null) {
+                                        onNavigateToFolder(file.path)
+                                    }
+                                }
                             )
                         }
                     }
@@ -182,6 +187,8 @@ private fun FileListItem(
     file: FileNode,
     onClick: () -> Unit
 ) {
+    val isDirectory = file is FileNode.Directory
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -201,7 +208,7 @@ private fun FileListItem(
                 contentDescription = null,
                 tint = when (file) {
                     is FileNode.File -> getFileColor(file.extension)
-                    is FileNode.Directory -> MaterialTheme.colorScheme.primary
+                    is FileNode.Directory -> androidx.compose.ui.graphics.Color(0xFF5C7A99)
                 },
                 modifier = Modifier.size(40.dp)
             )
@@ -240,6 +247,16 @@ private fun FileListItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+            
+            // Chevron for folders to indicate navigability
+            if (isDirectory) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "Navigate into folder",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

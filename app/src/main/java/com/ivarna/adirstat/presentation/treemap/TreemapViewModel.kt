@@ -1,5 +1,6 @@
 package com.ivarna.adirstat.presentation.treemap
 
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ivarna.adirstat.domain.model.FileNode
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.abs
 
 data class TreemapUiState(
     val isLoading: Boolean = true,
@@ -25,7 +27,12 @@ data class TreemapUiState(
     val fileCount: Int = 0,
     val folderCount: Int = 0,
     val selectedFile: FileNode? = null,
-    val error: String? = null
+    val error: String? = null,
+    // Zoom and pan state
+    val zoomScale: Float = 1f,
+    val zoomOffset: Offset = Offset.Zero,
+    val canvasWidth: Float = 1000f,
+    val canvasHeight: Float = 1000f
 )
 
 data class Breadcrumb(
@@ -138,11 +145,11 @@ class TreemapViewModel @Inject constructor(
         }
         
         // Filter out very small items for better visualization
-        val minSize = if (node.size > 0) node.size / 1000 else 0L // Only show items > 0.1%
+        val minSize = if (node.size > 0) node.size / 1000 else 0L
         val visibleChildren = children.filter { it.size >= minSize }.take(100)
         
-        // Calculate treemap layout
-        val bounds = Rect(0f, 0f, 1000f, 1000f)
+        // Use actual canvas dimensions
+        val bounds = Rect(0f, 0f, _uiState.value.canvasWidth, _uiState.value.canvasHeight)
         val rects = treemapLayoutEngine.calculateLayout(
             items = visibleChildren,
             bounds = bounds
@@ -156,7 +163,9 @@ class TreemapViewModel @Inject constructor(
                 treemapRects = rects,
                 fileCount = files,
                 folderCount = folders,
-                error = null
+                error = null,
+                zoomScale = 1f,
+                zoomOffset = Offset.Zero
             )
         }
     }
@@ -186,7 +195,7 @@ class TreemapViewModel @Inject constructor(
         val minSize = if (node.size > 0) node.size / 1000 else 0L
         val visibleChildren = children.filter { it.size >= minSize }.take(100)
         
-        val bounds = Rect(0f, 0f, 1000f, 1000f)
+        val bounds = Rect(0f, 0f, _uiState.value.canvasWidth, _uiState.value.canvasHeight)
         val rects = treemapLayoutEngine.calculateLayout(
             items = visibleChildren,
             bounds = bounds
@@ -198,7 +207,9 @@ class TreemapViewModel @Inject constructor(
                 breadcrumbs = currentBreadcrumbs,
                 treemapRects = rects,
                 fileCount = files,
-                folderCount = folders
+                folderCount = folders,
+                zoomScale = 1f,
+                zoomOffset = Offset.Zero
             )
         }
     }
@@ -232,7 +243,7 @@ class TreemapViewModel @Inject constructor(
             val minSize = if (target.size > 0) target.size / 1000 else 0L
             val visibleChildren = children.filter { it.size >= minSize }.take(100)
             
-            val bounds = Rect(0f, 0f, 1000f, 1000f)
+            val bounds = Rect(0f, 0f, _uiState.value.canvasWidth, _uiState.value.canvasHeight)
             val rects = treemapLayoutEngine.calculateLayout(
                 items = visibleChildren,
                 bounds = bounds
@@ -244,7 +255,9 @@ class TreemapViewModel @Inject constructor(
                     breadcrumbs = newBreadcrumbs,
                     treemapRects = rects,
                     fileCount = files,
-                    folderCount = folders
+                    folderCount = folders,
+                    zoomScale = 1f,
+                    zoomOffset = Offset.Zero
                 )
             }
         }
@@ -257,6 +270,62 @@ class TreemapViewModel @Inject constructor(
     fun refresh() {
         if (currentVolumePath.isNotEmpty()) {
             loadTreemap(currentVolumePath)
+        }
+    }
+    
+    // Zoom and pan functions
+    fun onTransformGesture(centroid: Offset, pan: Offset, zoom: Float) {
+        _uiState.update { state ->
+            val newScale = (state.zoomScale * zoom).coerceIn(0.5f, 10f)
+            val scaleDelta = newScale / state.zoomScale
+            val newOffset = (state.zoomOffset + centroid) * scaleDelta - centroid + pan
+            state.copy(
+                zoomScale = newScale,
+                zoomOffset = newOffset
+            )
+        }
+    }
+    
+    fun resetZoom() {
+        _uiState.update { it.copy(zoomScale = 1f, zoomOffset = Offset.Zero) }
+    }
+    
+    fun updateCanvasSize(width: Float, height: Float) {
+        _uiState.update { state ->
+            // Recalculate treemap with new dimensions if significantly different
+            if (abs(state.canvasWidth - width) > 50 || abs(state.canvasHeight - height) > 50) {
+                val bounds = Rect(0f, 0f, width, height)
+                val children = when (state.currentNode) {
+                    is FileNode.Directory -> (state.currentNode as FileNode.Directory).children.sortedByDescending { it.size }
+                    is FileNode.File -> listOf(state.currentNode)
+                    else -> emptyList()
+                }
+                val minSize = if (state.currentNode?.size ?: 0 > 0) state.currentNode!!.size / 1000 else 0L
+                val visibleChildren = children.filter { it.size >= minSize }.take(100)
+                val rects = treemapLayoutEngine.calculateLayout(items = visibleChildren, bounds = bounds)
+                
+                state.copy(
+                    canvasWidth = width,
+                    canvasHeight = height,
+                    treemapRects = rects
+                )
+            } else {
+                state.copy(canvasWidth = width, canvasHeight = height)
+            }
+        }
+    }
+    
+    fun onNodeTapped(localTap: Offset) {
+        val rects = _uiState.value.treemapRects
+        val tappedRect = rects.find { rect ->
+            localTap.x >= rect.x && localTap.x <= rect.x + rect.width &&
+            localTap.y >= rect.y && localTap.y <= rect.y + rect.height
+        }
+        tappedRect?.let { rect ->
+            when (rect.node) {
+                is FileNode.Directory -> navigateTo(rect.node)
+                is FileNode.File -> selectFile(rect.node)
+            }
         }
     }
 }

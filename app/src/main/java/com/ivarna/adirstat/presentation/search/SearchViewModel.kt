@@ -18,6 +18,7 @@ data class SearchUiState(
     val query: String = "",
     val results: List<FileNode> = emptyList(),
     val isSearching: Boolean = false,
+    val isLoading: Boolean = true,
     val useRegex: Boolean = false,
     val useWildcard: Boolean = false,
     val error: String? = null
@@ -40,8 +41,50 @@ class SearchViewModel @Inject constructor(
 
     private fun loadAllFiles() {
         viewModelScope.launch {
-            // Load files from cached scans
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                // Load files from cached scans - try internal storage first
+                val result = scanStorageUseCase.getCachedScan("/storage/emulated/0")
+                result.fold(
+                    onSuccess = { node ->
+                        if (node != null) {
+                            allFiles = flattenFileNode(node)
+                        }
+                    },
+                    onFailure = { /* ignore */ }
+                )
+                
+                // If no files, try other common paths
+                if (allFiles.isEmpty()) {
+                    val primaryStorage = android.os.Environment.getExternalStorageDirectory()
+                    val altResult = scanStorageUseCase.getCachedScan(primaryStorage.absolutePath)
+                    altResult.fold(
+                        onSuccess = { node ->
+                            if (node != null) {
+                                allFiles = flattenFileNode(node)
+                            }
+                        },
+                        onFailure = { /* ignore */ }
+                    )
+                }
+                
+                _uiState.update { it.copy(isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
         }
+    }
+    
+    private fun flattenFileNode(node: FileNode): List<FileNode> {
+        val result = mutableListOf<FileNode>()
+        fun traverse(n: FileNode) {
+            result.add(n)
+            if (n is FileNode.Directory) {
+                n.children.forEach { traverse(it) }
+            }
+        }
+        traverse(node)
+        return result
     }
 
     fun search(query: String) {
