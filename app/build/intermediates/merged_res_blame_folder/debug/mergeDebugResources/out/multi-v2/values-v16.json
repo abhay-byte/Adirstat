@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.ivarna.adirstat.app-mergeDebugResources-64:/values-v16/values-v16.xml",
+            "map": [
+                {
+                    "source": "/home/flux/.gradle/caches/9.2.1/transforms/328a922a43169ba3be2ea9d0f83b7efc/transformed/core-1.12.0/res/values-v16/values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "65",
+                        "endOffsets": "116"
+                    }
+                }
+            ]
+        }
+    ]
+}
