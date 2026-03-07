@@ -44,31 +44,25 @@ val OnErrorDark = Color(0xFF690005)
 
 // Treemap colors (fixed, NOT Material theme colors)
 object TreemapColors {
-    val Images = Color(0xFF4CAF50)      // Green
-    val Video = Color(0xFFF44336)       // Red
-    val Audio = Color(0xFF9C27B0)      // Purple
-    val Documents = Color(0xFFFF9800)  // Orange
-    val Archives = Color(0xFF795548)   // Brown
-    val Code = Color(0xFF00BCD4)       // Cyan
-    val Other = Color(0xFF607D8B)      // Blue-grey
+    val images = Color(0xFF4CAF50)       // Green
+    val videos = Color(0xFFF44336)       // Red
+    val audio = Color(0xFF9C27B0)        // Purple
+    val documents = Color(0xFFFF9800)    // Orange
+    val archives = Color(0xFF795548)     // Brown
+    val apk = Color(0xFFE91E63)          // Pink
+    val code = Color(0xFF00BCD4)         // Cyan
+    val other = Color(0xFF607D8B)       // Blue-grey
     
-    fun forCategory(category: FileCategory): Color = when (category) {
-        FileCategory.IMAGES -> Images
-        FileCategory.VIDEO -> Video
-        FileCategory.AUDIO -> Audio
-        FileCategory.DOCUMENTS -> Documents
-        FileCategory.ARCHIVES -> Archives
-        FileCategory.CODE -> Code
-        FileCategory.OTHER -> Other
+    fun getColorForCategory(category: com.ivarna.adirstat.domain.model.FileCategory): Color {
+        return when (category) {
+            com.ivarna.adirstat.domain.model.FileCategory.IMAGES -> images
+            com.ivarna.adirstat.domain.model.FileCategory.VIDEOS -> videos
+            com.ivarna.adirstat.domain.model.FileCategory.AUDIO -> audio
+            com.ivarna.adirstat.domain.model.FileCategory.DOCUMENTS -> documents
+            com.ivarna.adirstat.domain.model.FileCategory.ARCHIVES -> archives
+            com.ivarna.adirstat.domain.model.FileCategory.APK -> apk
+            com.ivarna.adirstat.domain.model.FileCategory.CODE -> code
+            com.ivarna.adirstat.domain.model.FileCategory.OTHER -> other
+        }
     }
-}
-
-enum class FileCategory {
-    IMAGES,
-    VIDEO,
-    AUDIO,
-    DOCUMENTS,
-    ARCHIVES,
-    CODE,
-    OTHER
 }

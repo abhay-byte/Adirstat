@@ -1,6 +1,8 @@
 package com.ivarna.adirstat;
 
 import androidx.hilt.work.HiltWrapper_WorkerFactoryModule;
+import com.ivarna.adirstat.di.DatabaseModule;
+import com.ivarna.adirstat.di.RepositoryModule;
 import com.ivarna.adirstat.presentation.MainActivity_GeneratedInjector;
 import dagger.Binds;
 import dagger.Component;
@@ -129,8 +131,10 @@ public final class AdirstatApplication_HiltComponents {
           ActivityRetainedCBuilderModule.class,
           ServiceCBuilderModule.class,
           ApplicationContextModule.class,
+          DatabaseModule.class,
           HiltWrapper_FragmentGetContextFix_FragmentGetContextFixModule.class,
-          HiltWrapper_WorkerFactoryModule.class
+          HiltWrapper_WorkerFactoryModule.class,
+          RepositoryModule.class
       }
   )
   @Singleton
