@@ -18,6 +18,9 @@
 | [progress/TODO.md](progress/TODO.md) | Task tracking for all features and setup | 2026-03-07 |
 | [progress/ONGOING.md](progress/ONGOING.md) | Currently in-progress tasks | 2026-03-07 |
 | [progress/FINISHED.md](progress/FINISHED.md) | Completed tasks | 2026-03-07 |
+| [fastlane/README.md](../fastlane/README.md) | Fastlane CI/CD setup guide | 2026-03-07 |
+| [fastlane/Appfile](../fastlane/Appfile) | Fastlane package configuration | 2026-03-07 |
+| [fastlane/Fastfile](../fastlane/Fastfile) | Fastlane lanes for CI/CD | 2026-03-07 |
 
 ---
 
@@ -38,6 +41,7 @@ When making changes to the app, immediately update ALL affected documents:
 | Bug Fixed | FEATURES.md (if affects feature behavior), SRS.md (if requirement affected), progress/TODO.md |
 | Task Started | progress/ONGOING.md (move from TODO), progress/TODO.md (mark in-progress) |
 | Task Completed | progress/FINISHED.md (add completed task), progress/ONGOING.md (remove), progress/TODO.md (mark complete) |
+| CI/CD Change | fastlane/Fastfile, fastlane/README.md, fastlane/metadata/ (update lanes, env vars, changelogs) |
 
 ---
 
