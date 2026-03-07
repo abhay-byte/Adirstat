@@ -17,6 +17,8 @@ import javax.inject.Inject
 
 data class TreemapUiState(
     val isLoading: Boolean = true,
+    val isScanning: Boolean = false,
+    val scanProgress: String = "",
     val currentNode: FileNode? = null,
     val breadcrumbs: List<Breadcrumb> = emptyList(),
     val treemapRects: List<TreemapRect> = emptyList(),
@@ -41,11 +43,14 @@ class TreemapViewModel @Inject constructor(
     val uiState: StateFlow<TreemapUiState> = _uiState.asStateFlow()
 
     private var rootNode: FileNode? = null
+    private var currentVolumePath: String = ""
 
     fun loadTreemap(volumePath: String) {
+        currentVolumePath = volumePath
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
+                // First try to load from cache
                 val result = scanStorageUseCase.getCachedScan(volumePath)
                 result.fold(
                     onSuccess = { node ->
@@ -53,20 +58,68 @@ class TreemapViewModel @Inject constructor(
                             rootNode = node
                             displayNode(node)
                         } else {
-                            _uiState.update { 
-                                it.copy(
-                                    isLoading = false, 
-                                    error = "No scan data available. Please scan this volume first." 
-                                ) 
-                            }
+                            // No cached data - start a new scan
+                            startScan(volumePath)
                         }
                     },
                     onFailure = { e ->
-                        _uiState.update { it.copy(isLoading = false, error = e.message) }
+                        // Error loading cache - start a new scan
+                        startScan(volumePath)
                     }
                 )
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                // Exception - start a new scan
+                startScan(volumePath)
+            }
+        }
+    }
+    
+    private fun startScan(volumePath: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = false, isScanning = true, scanProgress = "Starting scan...") }
+            try {
+                scanStorageUseCase.scanVolume(volumePath).collect { result ->
+                    result.fold(
+                        onSuccess = { state ->
+                            when (state) {
+                                is com.ivarna.adirstat.domain.usecase.ScanState.Scanning -> {
+                                    _uiState.update { 
+                                        it.copy(scanProgress = state.currentPath) 
+                                    }
+                                }
+                                is com.ivarna.adirstat.domain.usecase.ScanState.Complete -> {
+                                    // Save to cache
+                                    scanStorageUseCase.saveScanResult(state.rootNode, volumePath)
+                                    
+                                    rootNode = state.rootNode
+                                    _uiState.update { 
+                                        it.copy(
+                                            isScanning = false, 
+                                            scanProgress = ""
+                                        )
+                                    }
+                                    displayNode(state.rootNode)
+                                }
+                                else -> {}
+                            }
+                        },
+                        onFailure = { e ->
+                            _uiState.update { 
+                                it.copy(
+                                    isScanning = false, 
+                                    error = e.message
+                                ) 
+                            }
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(
+                        isScanning = false, 
+                        error = e.message
+                    ) 
+                }
             }
         }
     }
@@ -85,7 +138,7 @@ class TreemapViewModel @Inject constructor(
         }
         
         // Filter out very small items for better visualization
-        val minSize = node.size / 1000 // Only show items > 0.1%
+        val minSize = if (node.size > 0) node.size / 1000 else 0L // Only show items > 0.1%
         val visibleChildren = children.filter { it.size >= minSize }.take(100)
         
         // Calculate treemap layout
@@ -130,7 +183,7 @@ class TreemapViewModel @Inject constructor(
             else -> emptyList()
         }
         
-        val minSize = node.size / 1000
+        val minSize = if (node.size > 0) node.size / 1000 else 0L
         val visibleChildren = children.filter { it.size >= minSize }.take(100)
         
         val bounds = Rect(0f, 0f, 1000f, 1000f)
@@ -176,7 +229,7 @@ class TreemapViewModel @Inject constructor(
                 else -> emptyList()
             }
             
-            val minSize = target.size / 1000
+            val minSize = if (target.size > 0) target.size / 1000 else 0L
             val visibleChildren = children.filter { it.size >= minSize }.take(100)
             
             val bounds = Rect(0f, 0f, 1000f, 1000f)
@@ -202,6 +255,8 @@ class TreemapViewModel @Inject constructor(
     }
 
     fun refresh() {
-        rootNode?.let { loadTreemap(it.path) }
+        if (currentVolumePath.isNotEmpty()) {
+            loadTreemap(currentVolumePath)
+        }
     }
 }

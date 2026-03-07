@@ -10,14 +10,14 @@ This document contains all tasks to be completed for Adirstat.
 |---------|-------------|------------|--------|
 | TASK-000 | Project documentation initialized | - | ✅ Complete |
 | TASK-001 | Project scaffold (Hilt, Room, Compose, Navigation, DataStore setup) | - | ✅ Complete |
-| TASK-002 | PermissionManager.kt — full multi-API-level permission logic | - | 🔴 Not Started |
-| TASK-003 | StorageVolume enumeration using StorageManager | F-001 | 🔴 Not Started |
-| TASK-004 | FileSystemDataSource recursive scan with coroutine + Flow | F-006 | 🔴 Not Started |
-| TASK-005 | MediaStoreDataSource fallback | F-007 | 🔴 Not Started |
-| TASK-006 | StorageStatsDataSource (StorageStatsManager wrapper) | F-001 | 🔴 Not Started |
-| TASK-007 | Room DB setup (3 tables: scan_history, scan_cache, user_exclusions) | F-011 | 🔴 Not Started |
-| TASK-008 | Squarified Treemap layout algorithm (pure Kotlin, unit testable) | F-013 | 🔴 Not Started |
-| TASK-009 | Treemap Canvas renderer in Compose | F-013 | 🔴 Not Started |
+| TASK-002 | PermissionManager.kt — full multi-API-level permission logic | - | ✅ Complete |
+| TASK-003 | StorageVolume enumeration using StorageManager | F-001 | ✅ Complete |
+| TASK-004 | FileSystemDataSource recursive scan with coroutine + Flow | F-006 | ✅ Complete |
+| TASK-005 | MediaStoreDataSource fallback | F-007 | ✅ Complete |
+| TASK-006 | StorageStatsDataSource (StorageStatsManager wrapper) | F-001 | ✅ Complete |
+| TASK-007 | Room DB setup (3 tables: scan_history, scan_cache, user_exclusions) | F-011 | ✅ Complete |
+| TASK-008 | Squarified Treemap layout algorithm (pure Kotlin, unit testable) | F-013 | ✅ Complete |
+| TASK-009 | Treemap Canvas renderer in Compose | F-013 | ✅ Complete |
 | TASK-010 | Unit tests for TreemapLayoutEngine | F-013 | 🔴 Not Started |
 | TASK-011 | Unit tests for ScanStorageUseCase | F-006 | 🔴 Not Started |
 | TASK-012 | Fastlane setup + all lanes | - | ✅ Complete |
@@ -31,32 +31,32 @@ This document contains all tasks to be completed for Adirstat.
 
 | Task ID | Description | Feature ID | Status |
 |---------|-------------|------------|--------|
-| TASK-014 | Enumerate all storage volumes | F-001 | 🔴 Not Started |
-| TASK-015 | Partition usage bar component | F-002 | 🔴 Not Started |
+| TASK-014 | Enumerate all storage volumes | F-001 | ✅ Complete |
+| TASK-015 | Partition usage bar component | F-002 | ✅ Complete |
 | TASK-016 | Partition pie/donut chart | F-003 | 🔴 Not Started |
-| TASK-017 | Tap partition to scan | F-004 | 🔴 Not Started |
-| TASK-018 | Last scan timestamp display | F-005 | 🔴 Not Started |
+| TASK-017 | Tap partition to scan | F-004 | ✅ Complete |
+| TASK-018 | Last scan timestamp display | F-005 | ✅ Complete |
 
 ### Scanning Engine (F-006 to F-012)
 
 | Task ID | Description | Feature ID | Status |
 |---------|-------------|------------|--------|
-| TASK-019 | Recursive file traversal with File API | F-006 | 🔴 Not Started |
-| TASK-020 | MediaStore fallback implementation | F-007 | 🔴 Not Started |
-| TASK-021 | Real-time scan progress via Flow | F-008 | 🔴 Not Started |
-| TASK-022 | Cancellable scan with coroutine | F-009 | 🔴 Not Started |
+| TASK-019 | Recursive file traversal with File API | F-006 | ✅ Complete |
+| TASK-020 | MediaStore fallback implementation | F-007 | ✅ Complete |
+| TASK-021 | Real-time scan progress via Flow | F-008 | ✅ Complete |
+| TASK-022 | Cancellable scan with coroutine | F-009 | ✅ Complete |
 | TASK-023 | Background scan via WorkManager | F-010 | 🔴 Not Started |
-| TASK-024 | Scan result caching in Room | F-011 | 🔴 Not Started |
+| TASK-024 | Scan result caching in Room | F-011 | ✅ Complete |
 | TASK-025 | Rescan/refresh functionality | F-012 | 🔴 Not Started |
 
 ### Treemap Visualization (F-013 to F-017)
 
 | Task ID | Description | Feature ID | Status |
 |---------|-------------|------------|--------|
-| TASK-026 | Implement squarified treemap algorithm | F-013 | 🔴 Not Started |
-| TASK-027 | Color coding by file type | F-014 | 🔴 Not Started |
-| TASK-028 | Tap to drill down | F-015 | 🔴 Not Started |
-| TASK-029 | Breadcrumb navigation | F-016 | 🔴 Not Started |
+| TASK-026 | Implement squarified treemap algorithm | F-013 | ✅ Complete |
+| TASK-027 | Color coding by file type | F-014 | ✅ Complete |
+| TASK-028 | Tap to drill down | F-015 | ✅ Complete |
+| TASK-029 | Breadcrumb navigation | F-016 | ✅ Complete |
 | TASK-030 | Pinch-to-zoom gesture | F-017 | 🔴 Not Started |
 
 ### File List View (F-018 to F-022)

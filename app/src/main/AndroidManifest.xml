@@ -58,6 +58,16 @@
             </intent-filter>
         </activity>
 
+        <!-- Crash Activity - runs in separate process to survive crashes -->
+        <activity
+            android:name=".crash.CrashActivity"
+            android:process=":crash_process"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:taskAffinity=""
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.Adirstat" />
+
     </application>
 
 </manifest>

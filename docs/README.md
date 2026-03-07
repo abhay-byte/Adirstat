@@ -15,6 +15,7 @@
 | [UI_UX_DOCUMENTATION.md](UI_UX_DOCUMENTATION.md) | All 13 screen specifications | 2026-03-07 |
 | [UI_DESIGN_SYSTEM.md](UI_DESIGN_SYSTEM.md) | Design values, typography, colors, components | 2026-03-07 |
 | [DIAGRAMS.md](DIAGRAMS.md) | All 13 Mermaid diagrams | 2026-03-07 |
+| [CRASH_HANDLER.md](CRASH_HANDLER.md) | Crash handling implementation for Android 16 | 2026-03-07 |
 | [progress/TODO.md](progress/TODO.md) | Task tracking for all features and setup | 2026-03-07 |
 | [progress/ONGOING.md](progress/ONGOING.md) | Currently in-progress tasks | 2026-03-07 |
 | [progress/FINISHED.md](progress/FINISHED.md) | Completed tasks | 2026-03-07 |
@@ -42,6 +43,7 @@ When making changes to the app, immediately update ALL affected documents:
 | Task Started | progress/ONGOING.md (move from TODO), progress/TODO.md (mark in-progress) |
 | Task Completed | progress/FINISHED.md (add completed task), progress/ONGOING.md (remove), progress/TODO.md (mark complete) |
 | CI/CD Change | fastlane/Fastfile, fastlane/README.md, fastlane/metadata/ (update lanes, env vars, changelogs) |
+| Crash Handler Change | CRASH_HANDLER.md (update implementation details) |
 
 ---
 

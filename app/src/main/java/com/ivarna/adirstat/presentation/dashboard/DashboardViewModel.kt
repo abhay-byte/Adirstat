@@ -20,6 +20,7 @@ data class DashboardUiState(
     val storageVolumes: List<StorageVolumeUi> = emptyList(),
     val isScanning: Boolean = false,
     val scanProgress: String = "",
+    val scannedVolumePath: String? = null,
     val error: String? = null
 )
 
@@ -60,8 +61,6 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun requestAllFilesAccess() {
-        // This should be called from Activity context - simplified for now
-        // In production, this would use a launcher from the composable
         checkPermissions()
     }
 
@@ -123,10 +122,14 @@ class DashboardViewModel @Inject constructor(
                                     }
                                 }
                                 is com.ivarna.adirstat.domain.usecase.ScanState.Complete -> {
+                                    // Save scan result to cache
+                                    scanStorageUseCase.saveScanResult(state.rootNode, volumePath)
+                                    
                                     _uiState.update { 
                                         it.copy(
                                             isScanning = false, 
                                             scanProgress = "",
+                                            scannedVolumePath = volumePath,
                                             storageVolumes = _uiState.value.storageVolumes.map { vol ->
                                                 if (vol.path == volumePath) {
                                                     vol.copy(
@@ -161,5 +164,9 @@ class DashboardViewModel @Inject constructor(
                 }
             }
         }
+    }
+    
+    fun onNavigatedToTreemap() {
+        _uiState.update { it.copy(scannedVolumePath = null) }
     }
 }

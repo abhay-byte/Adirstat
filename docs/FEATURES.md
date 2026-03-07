@@ -14,11 +14,11 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-001 | Enumerate Storage Volumes | Use StorageManager.getStorageVolumes() to list all partitions: internal, SD card, OTG | 🔴 Not Started |
-| F-002 | Partition Usage Bar | Display horizontal usage bar showing used/free space ratio for each partition | 🔴 Not Started |
+| F-001 | Enumerate Storage Volumes | Use StorageManager.getStorageVolumes() to list all partitions: internal, SD card, OTG | ✅ Complete |
+| F-002 | Partition Usage Bar | Display horizontal usage bar showing used/free space ratio for each partition | ✅ Complete |
 | F-003 | Partition Pie/Donut Chart | Visual donut chart showing partition usage breakdown | 🔴 Not Started |
-| F-004 | Tap to Scan | Initiate scan when user taps on a partition card | 🔴 Not Started |
-| F-005 | Last Scan Timestamp | Show last scan time for each partition on the dashboard | 🔴 Not Started |
+| F-004 | Tap to Scan | Initiate scan when user taps on a partition card | ✅ Complete |
+| F-005 | Last Scan Timestamp | Show last scan time for each partition on the dashboard | ✅ Complete |
 
 ---
 
@@ -26,12 +26,12 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-006 | Recursive File Traversal | Use File API to recursively scan directories and calculate sizes | 🔴 Not Started |
-| F-007 | MediaStore Fallback | Query MediaStore ContentProvider when MANAGE_EXTERNAL_STORAGE not granted | 🔴 Not Started |
-| F-008 | Real-time Progress | Emit scan progress via Flow (files scanned, current path, %) | 🔴 Not Started |
-| F-009 | Cancellable Scan | Allow user to cancel ongoing scan via coroutine cancellation | 🔴 Not Started |
+| F-006 | Recursive File Traversal | Use File API to recursively scan directories and calculate sizes | ✅ Complete |
+| F-007 | MediaStore Fallback | Query MediaStore ContentProvider when MANAGE_EXTERNAL_STORAGE not granted | ✅ Complete |
+| F-008 | Real-time Progress | Emit scan progress via Flow (files scanned, current path, %) | ✅ Complete |
+| F-009 | Cancellable Scan | Allow user to cancel ongoing scan via coroutine cancellation | ✅ Complete |
 | F-010 | Background Scan (WorkManager) | Schedule periodic scans via WorkManager | 🔴 Not Started |
-| F-011 | Scan Result Caching | Cache scan results in Room database | 🔴 Not Started |
+| F-011 | Scan Result Caching | Cache scan results in Room database | ✅ Complete |
 | F-012 | Rescan/Refresh | Button to force fresh scan, bypassing cache | 🔴 Not Started |
 
 ---
@@ -40,10 +40,10 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin | 🔴 Not Started |
-| F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.) | 🔴 Not Started |
-| F-015 | Tap to Drill Down | Navigate into folder when tapping its treemap block | 🔴 Not Started |
-| F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Home > Downloads > Videos) | 🔴 Not Started |
+| F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin | ✅ Complete |
+| F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.) | ✅ Complete |
+| F-015 | Tap to Drill Down | Navigate into folder when tapping its treemap block | ✅ Complete |
+| F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Home > Downloads > Videos) | ✅ Complete |
 | F-017 | Pinch-to-Zoom | Support pinch gestures to zoom treemap in/out | 🔴 Not Started |
 
 ---
@@ -52,11 +52,11 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-018 | Sortable File List | Display flat list sorted by size (default: largest first) | 🔴 Not Started |
+| F-018 | Sortable File List | Display flat list sorted by size (default: largest first) | ✅ Complete |
 | F-019 | Sort Options | Sort by: size, name, date modified, extension (ascending/descending) | 🔴 Not Started |
 | F-020 | Filter by Extension/Size/Date | Allow filtering by file extension, size range slider, date range | 🔴 Not Started |
 | F-021 | Wildcard & Regex Search | Search with wildcards (*.mp4) and regex toggle | 🔴 Not Started |
-| F-022 | File Type Grouping | Show file type breakdown with percentage bars | 🔴 Not Started |
+| F-022 | File Type Grouping | Show file type breakdown with percentage bars | ✅ Complete |
 
 ---
 
