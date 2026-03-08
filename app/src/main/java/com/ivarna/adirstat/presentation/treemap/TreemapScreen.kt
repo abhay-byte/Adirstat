@@ -1,9 +1,10 @@
 package com.ivarna.adirstat.presentation.treemap
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
 import com.ivarna.adirstat.util.FileActions
@@ -400,6 +400,7 @@ private fun LegendItem(color: Long, label: String) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileListView(
     nodes: List<FileNode>,
@@ -457,12 +458,10 @@ private fun FileListView(
                     }
                 },
                 modifier = Modifier
-                    .clickable { onItemClick(item) }
-                    .pointerInput(item.path) {
-                        detectTapGestures(
-                            onLongPress = { onItemLongClick(item) }
-                        )
-                    }
+                    .combinedClickable(
+                        onClick = { onItemClick(item) },
+                        onLongClick = { onItemLongClick(item) }
+                    )
             )
             HorizontalDivider()
         }
@@ -477,6 +476,8 @@ private fun FileDetailsContent(
     onShare: (String) -> Unit,
     onDelete: (String) -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -502,16 +503,34 @@ private fun FileDetailsContent(
         Spacer(modifier = Modifier.height(24.dp))
         
         if (file.isVirtual) {
+            val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = MaterialTheme.shapes.medium
             ) {
-                Text(
-                    text = "Protected app-storage summary. This node is virtual, read-only, and cannot be opened, shared, or deleted.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(12.dp)
-                )
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Protected app-storage summary. This node is virtual, read-only, and cannot be opened, shared, or deleted.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (packageName != null) {
+                        OutlinedButton(
+                            onClick = {
+                                FileActions.openAppInfo(context, packageName)
+                                onDismiss()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Settings, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Open app details")
+                        }
+                    }
+                }
             }
         } else {
             Row(

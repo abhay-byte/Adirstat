@@ -359,7 +359,7 @@ The app implements the **Squarified Treemap** algorithm (Ben Shneiderman, 2000) 
 - Nodes are always sorted by `sizeBytes` descending before layout
 - The layout engine minimizes the worst aspect ratio of each row before recursing into the remaining bounds
 - Root-level treemap rendering is capped to `MAX_ROOT_NODES = 20`; remaining nodes are folded into an `Others (N)` node
-- Any node whose estimated canvas area falls below roughly `48dp × 32dp` is grouped into an `Others` aggregate before drawing
+- Any node whose estimated canvas area falls below roughly `36dp × 24dp` is grouped into an `Others` aggregate before drawing
 
 ### 6.2 Treemap Rendering: Compose Canvas
 
@@ -535,13 +535,24 @@ data class DashboardUiState(
 
 The dashboard UI consumes this state as a dedicated internal-storage spotlight section with used/free chips, app/media/file summary pills, and the same multi-segment storage bar used by regular volume cards.
 
+The spotlight intentionally uses solid `surfaceVariant` / `surface` containers from the design system rather than translucent overlays.
+
 ### 8.3 FileListViewModel and SearchViewModel Behavior
 
 - `FileListViewModel` now accepts either a root storage path or a nested real/virtual directory path.
 - It resolves that path against the cached scan tree plus `VirtualNodeBuilder` output and rebuilds the navigation stack accordingly.
 - Root-level file lists merge real folders with virtual app-data folders.
+- File-list row interaction uses a single combined click handler so tap always drills in and long-press always opens the detail sheet.
+- Virtual app detail sheets in treemap and file-list flows can deep-link into `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for cache/data clearing or uninstall.
 - `SearchViewModel` indexes both cached scan nodes and virtual app-data nodes, then matches against `name`, `path`, and `virtualLabel`.
-- Search results can now route the user into the matching directory path or show file actions via bottom sheet.
+- Search results can now route the user into the matching directory path or show file actions via bottom sheet, and the index is refreshed when the screen resumes.
+
+### 8.4 Treemap Label Rendering Rule
+
+- `TreemapView` may shrink text to fit a block, but it never truncates with ellipsis.
+- Node titles may wrap across up to 3 lines when the full title fits inside the block.
+- Size and percentage metadata are rendered only when the node title is also rendered in full.
+- If the full title cannot fit, the block is left unlabeled instead of being shortened.
 
 ---
 

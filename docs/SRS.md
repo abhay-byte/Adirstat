@@ -39,9 +39,9 @@ Adirstat is a self-contained Android application. It does not connect to any bac
 | Feature Category | Key Capabilities |
 |-----------------|-------------------|
 | Storage Scanning | Full recursive scan, MediaStore fallback, background scan support |
-| Visualization | Interactive treemap, color-coded by file type, drill-down navigation |
+| Visualization | Interactive treemap, color-coded by file type, full-fit wrapped labels, drill-down navigation |
 | File Analysis | Large files list, file type breakdown, duplicate detection |
-| App Analysis | Per-app storage breakdown (APK + data + cache) |
+| App Analysis | Per-app storage breakdown (APK + data + cache) with direct App Info shortcuts |
 | Data Management | Delete files, batch operations, export to CSV |
 | History | Scan history with storage change comparison |
 | Customization | Theme selection, exclusion paths, minimum file size filter |
@@ -121,7 +121,7 @@ The app shall color treemap blocks by file type category:
 - Other: Blue-grey (#607D8B)
 
 #### FR-TREE-03: Tap to Drill Down
-Tapping a treemap block representing a folder shall navigate into that folder, loading its children into the treemap.
+Tapping a treemap block representing a folder or virtual app-storage node shall navigate into that node, loading its children into the treemap.
 
 #### FR-TREE-04: Breadcrumb Navigation
 The app shall display a breadcrumb bar showing current path (e.g., "Home > Downloads > Videos"). Tapping any segment shall navigate directly to that level.
@@ -129,12 +129,18 @@ The app shall display a breadcrumb bar showing current path (e.g., "Home > Downl
 #### FR-TREE-05: Pinch-to-Zoom
 The treemap shall support pinch-to-zoom gestures to zoom in/out of the current view.
 
+#### FR-TREE-06: Full-Fit Labels Only
+Treemap labels shall obey the following readability rules:
+- Node titles may wrap across up to 3 lines when space allows
+- No treemap label may be ellipsized or partially truncated
+- Size and percentage metadata shall only render when the full node title also fits
+
 ---
 
 ### 3.3 FILELIST Module
 
 #### FR-LIST-01: Sortable File List
-The app shall display a flat list of files sorted by size (largest first by default). Sorting options shall include:
+The app shall display a browsable list of scanned files, folders, and virtual app-storage directories sorted by size (largest first by default). Sorting options shall include:
 - Size (ascending/descending)
 - Name (A-Z/Z-A)
 - Date modified (newest/oldest)
@@ -150,6 +156,7 @@ The list shall support filtering by:
 The app shall support search with:
 - Wildcard pattern (e.g., `*.mp4`, `backup_*`)
 - Regular expression toggle for advanced users
+- Matches over both cached scan nodes and virtual app-storage nodes
 
 #### FR-LIST-04: Large Files Quick View
 The app shall provide a quick-access view showing the top 100 largest files across the scanned partition.
@@ -230,7 +237,7 @@ The app list shall be sortable by:
 - Cache size
 
 #### FR-APP-03: Open App Settings
-Tapping an app shall open the system App Info page for that app, allowing users to clear data/cache or uninstall.
+Tapping an app, or choosing the app-details action from a virtual app-storage node in the treemap or file list, shall open the system App Info page for that app, allowing users to clear data/cache or uninstall.
 
 ---
 
@@ -405,7 +412,7 @@ The app shall include the following screens:
 | Module | Requirements |
 |--------|--------------|
 | SCAN | FR-SCAN-01 through FR-SCAN-08 |
-| TREEMAP | FR-TREE-01 through FR-TREE-05 |
+| TREEMAP | FR-TREE-01 through FR-TREE-06 |
 | FILELIST | FR-LIST-01 through FR-LIST-06 |
 | DUPLICATE | FR-DUP-01 through FR-DUP-04 |
 | PARTITION | FR-PART-01 through FR-PART-04 |
@@ -415,4 +422,4 @@ The app shall include the following screens:
 | HISTORY | FR-HIST-01 through FR-HIST-02 |
 | SETTINGS | FR-SET-01 through FR-SET-04 |
 
-Total: **43 functional requirements**
+Total: **44 functional requirements**

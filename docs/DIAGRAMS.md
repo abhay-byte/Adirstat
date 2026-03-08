@@ -80,12 +80,14 @@ flowchart TD
     N -->|Tap Breadcrumb| P[Navigate Up]
     N -->|Search| Q[Search Screen]
     N -->|File List| R[File List Screen]
+    N -->|App Details| AB[App Info]
     N -->|Duplicates| S[Duplicate Screen]
     N -->|Delete| T[Delete Flow]
     
     O --> M
     P --> M
     
+    R -->|Virtual App Details| AB
     R --> U[Filter/Sort]
     U --> R
     
@@ -296,6 +298,13 @@ sequenceDiagram
         TreemapViewModel->>TreemapViewModel: showFileDetails(file)
         TreemapViewModel-->>TreemapScreen: Update state
         TreemapScreen->>User: Show Bottom Sheet
+    end
+
+    alt Block is Virtual App Node
+        TreemapViewModel->>TreemapViewModel: navigateToDirectory(dir)
+        TreemapViewModel-->>TreemapScreen: Update state with APK/Data/Cache children
+        User->>TreemapScreen: Open app details from bottom sheet
+        TreemapScreen->>User: Launch Android App Info
     end
     
     alt Block is Directory

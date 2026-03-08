@@ -146,7 +146,8 @@ fun DashboardScreen(
                 else -> {
                     StorageVolumesContent(
                         volumes = uiState.storageVolumes,
-                        onVolumeClick = onNavigateToTreemap
+                        onVolumeClick = onNavigateToTreemap,
+                        onSearchClick = onNavigateToSearch
                     )
                 }
             }
@@ -266,7 +267,8 @@ private fun ScanProgressContent(
 @Composable
 private fun StorageVolumesContent(
     volumes: List<DashboardViewModel.StorageVolumeInfo>,
-    onVolumeClick: (String) -> Unit
+    onVolumeClick: (String) -> Unit,
+    onSearchClick: () -> Unit
 ) {
     val primaryVolume = volumes.firstOrNull { it.path == "/storage/emulated/0" } ?: volumes.firstOrNull()
     val secondaryVolumes = volumes.filter { it != primaryVolume }
@@ -287,7 +289,8 @@ private fun StorageVolumesContent(
             item {
                 InternalStorageSpotlightCard(
                     volume = volume,
-                    onClick = { onVolumeClick(volume.path) }
+                    onClick = { onVolumeClick(volume.path) },
+                    onSearchClick = onSearchClick
                 )
             }
         }
@@ -340,7 +343,8 @@ private fun SectionHeader(
 @Composable
 private fun InternalStorageSpotlightCard(
     volume: DashboardViewModel.StorageVolumeInfo,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onSearchClick: () -> Unit
 ) {
     val categories = volume.storageCategories ?: StorageCategories(
         appsBytes = 0L,
@@ -365,18 +369,18 @@ private fun InternalStorageSpotlightCard(
         },
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -388,14 +392,14 @@ private fun InternalStorageSpotlightCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(18.dp)
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.SdCard,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(10.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
@@ -420,7 +424,7 @@ private fun InternalStorageSpotlightCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StorageSummaryPill(
                     modifier = Modifier.weight(1f),
@@ -439,12 +443,24 @@ private fun InternalStorageSpotlightCard(
                 )
             }
 
+            if (!volume.neverScanned) {
+                OutlinedButton(
+                    onClick = onSearchClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Search scanned files and apps")
+                }
+            }
+
             MultiSegmentStorageBar(categories = categories)
             StorageBreakdownLegend(categories = categories)
 
             Surface(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
-                shape = RoundedCornerShape(14.dp)
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -484,11 +500,11 @@ private fun StorageSummaryPill(
 ) {
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-        shape = RoundedCornerShape(16.dp)
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(8.dp)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
@@ -536,15 +552,15 @@ private fun StorageVolumeCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (highlighted) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                MaterialTheme.colorScheme.secondaryContainer
             } else {
-                MaterialTheme.colorScheme.surface
+                MaterialTheme.colorScheme.surfaceVariant
             }
         ),
         border = if (highlighted) {
             androidx.compose.foundation.BorderStroke(
                 1.dp,
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
             )
         } else null
     ) {
@@ -664,8 +680,8 @@ private fun StorageStatChip(
 ) {
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-        shape = RoundedCornerShape(16.dp)
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(8.dp)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),

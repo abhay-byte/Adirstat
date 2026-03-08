@@ -13,6 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.ivarna.adirstat.domain.model.FileNode
 import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
@@ -30,6 +33,17 @@ fun SearchScreen(
     var selectedNode by remember { mutableStateOf<FileNode?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshIndex()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     
     Scaffold(
         topBar = {
@@ -119,7 +133,7 @@ fun SearchScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = if (uiState.isLoading) "Loading scan data..." else "No files found",
+                                text = if (uiState.isLoading) "Loading scan data..." else "No matches found",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -156,8 +170,9 @@ fun SearchScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             if (!uiState.isLoading) {
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Use * for wildcard, or toggle Regex",
+                                    text = "Use the home search action after scanning, or search here anytime.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

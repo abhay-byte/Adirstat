@@ -6,51 +6,35 @@ This document tracks tasks currently being worked on.
 
 ## Currently In Progress
 
-| Task ID | Description | Feature ID | Notes |
-|---------|-------------|------------|-------|
-| ROUND-7-1 | Remove fake root virtual nodes | - | Delete injected `System` / `Apps` nodes; log only real root children |
-| ROUND-7-2 | Fix dashboard media totals | F-007 | Query `MediaStore` for image/video/audio bytes so Media is not `0 B` |
-| ROUND-7-3 | Add treemap virtual app layer | F-026, F-036, F-037 | Merge real scan nodes with treemap-only virtual app-data nodes at root |
-| ROUND-7-4 | Fix list folder navigation | F-018 | Single tap enters folder, long-press opens sheet, back navigates up |
-| ROUND-7-5 | Remove duplicate scan button | F-004 | Keep only the dashboard `Scan Storage` FAB; card tap opens treemap after scan |
-| ROUND-8-1 | Fix treemap title and total | F-013 | Root title is `Storage`; root total uses true partition used bytes |
-| ROUND-8-2 | Fix crushed treemap blocks | F-013, F-014 | Enforce top-20 + Others and minimum-area grouping before drawing |
-| ROUND-8-3 | Fix breadcrumb path | F-016 | Hide breadcrumb at root; show `Storage › …` path when drilled in |
-| ROUND-9-1 | Add internal-storage spotlight section | F-002, F-004 | Dedicated internal-storage section with summary pills and improved presentation |
-| ROUND-9-2 | Restore search navigation and app indexing | F-021, F-026 | Search indexes virtual app folders and routes into file-list browsing |
-| ROUND-9-3 | Complete app-aware list browsing | F-018, F-026, F-036 | Treemap list mode shows raw app nodes; file list resolves nested real/virtual paths |
+No active round tasks. The storage visualization, list browsing, search, and virtual app-storage fixes are complete and the remaining backlog has moved back to [progress/TODO.md](TODO.md).
 
 ---
 
-## Recently Completed (March 7, 2026)
+## Recently Completed (March 8, 2026)
 
-### Bug Fix Round 4 - Permissions, Treemap, Search
-- Fixed PermissionScreen - created new permission screen with sequential requests
-- Fixed Navigation.kt - Permission as start destination, FileList folder navigation
-- Fixed FileTypeColorMapper - recursive color detection for directories
-- Fixed TreemapViewModel - breadcrumb duplicate prevention
-- Fixed SearchScreen - improved empty states and icons
-- Fixed TreemapScreen - color legend padding
+### Bug Fix Round 11 - Treemap Labels + App Info Actions
+- Restored treemap node title priority with full-fit wrapped labels and no size-only labels
+- Added `Open app details` actions for virtual app-storage nodes from both treemap and file-list bottom sheets
 
-### Bug Fix Round 3 - Storage + Android/data Restriction
-- Fixed StorageStatsDataSource with queryStatsForPackage for accurate per-app storage
-- Fixed StorageRepository to combine file scan + StorageStatsManager data
-- Fixed Dashboard to show multi-segment storage bar (Apps/Media/Files/Free)
-- Fixed Search to load from cached scan results
-- Fixed FileList navigation: folder tap navigates, file tap shows sheet
-- Added virtual Android/data nodes to treemap via ScanStorageUseCase
-- Updated PERMISSIONS.md with Android/data restriction documentation
-- Updated SDD.md with new data sources
-- Updated UI_UX_DOCUMENTATION.md with new Dashboard and Treemap sections
-- Updated FEATURES.md: F-026, F-027 now 🟡 In Progress, added F-036
+### Bug Fix Round 10 - Home Search + Reliable List Taps
+- Added a direct dashboard home search action after scan completion
+- Refreshed search index on resume so newly scanned content appears immediately
+- Replaced conflicting row handlers with combined click handling for file-list and treemap list mode
+- Switched dashboard spotlight styling back to solid Material surfaces per the design system
 
-### Bug Fixes Completed
-- Fixed Compose version incompatibility causing crash on CircularProgressIndicator
-- Fixed Dashboard UI: storage bar, empty state, FAB, scan staleness indicator
-- Fixed Treemap colors at root level (all blocks same color issue)
-- Fixed Treemap labels in subfolders  
-- Fixed info bar styling and clickable breadcrumbs
-- Fixed list view toggle functionality
+### Bug Fix Round 9 - Dashboard/Search/List Improvements
+- Added the internal-storage spotlight section with summary pills and improved hierarchy
+- Restored global search functionality and app indexing
+- Completed app-aware browsing in both dedicated list view and treemap list mode
+
+### Bug Fix Round 8 - Treemap Layout + Breadcrumb Accuracy
+- Fixed treemap title, real total bytes, grouped density, and breadcrumb correctness
+
+### Bug Fix Round 7 - Root/Data Accuracy
+- Removed fake root `System` and `Apps` nodes
+- Fixed dashboard media totals from `MediaStore`
+- Added virtual protected app-data nodes with drill-down
+- Fixed single-tap folder navigation and removed the duplicate scan button
 
 ### Features Completed
 - F-001: Storage volume enumeration
@@ -67,7 +51,12 @@ This document tracks tasks currently being worked on.
 - F-015: Tap to drill down
 - F-016: Breadcrumb navigation
 - F-018: Sortable file list
+- F-021: Wildcard and regex search
 - F-022: File type grouping
+- F-026: Per-app protected storage browsing
+- F-027: Open App Info from virtual app-storage entries
+- F-036: Virtual app data nodes
+- F-037: Virtual app breakdown drill-down
 
 ---
 

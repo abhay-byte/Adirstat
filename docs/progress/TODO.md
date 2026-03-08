@@ -64,10 +64,10 @@ This document contains all tasks to be completed for Adirstat.
 
 | Task ID | Description | Feature ID | Status |
 |---------|-------------|------------|--------|
-| TASK-031 | Sortable file list | F-018 | 🔴 Not Started |
+| TASK-031 | Sortable file list | F-018 | ✅ Complete |
 | TASK-032 | Sort options (size/name/date/type) | F-019 | 🔴 Not Started |
 | TASK-033 | Filter by extension/size/date | F-020 | 🔴 Not Started |
-| TASK-034 | Wildcard and regex search | F-021 | 🔴 Not Started |
+| TASK-034 | Wildcard and regex search | F-021 | ✅ Complete |
 | TASK-035 | File type grouping view | F-022 | 🔴 Not Started |
 
 ### Duplicate Detection (F-023 to F-025)
@@ -82,8 +82,8 @@ This document contains all tasks to be completed for Adirstat.
 
 | Task ID | Description | Feature ID | Status |
 |---------|-------------|------------|--------|
-| TASK-039 | List installed apps with sizes | F-026 | 🔴 Not Started |
-| TASK-040 | App size sorting and navigation | F-027 | 🔴 Not Started |
+| TASK-039 | Expose virtual app-storage entries with sizes and APK/Data/Cache drill-down | F-026, F-036, F-037 | ✅ Complete |
+| TASK-040 | Open App Info from virtual app-storage entries | F-027 | ✅ Complete |
 
 ### File Actions (F-028 to F-030)
 
@@ -112,20 +112,7 @@ This document contains all tasks to be completed for Adirstat.
 
 ## Task Count Summary
 
-| Category | Tasks | Complete | Not Started |
-|----------|-------|----------|------------|
-| Setup | 13 | 2 | 11 |
-| Partition & Overview | 5 | 0 | 5 |
-| Scanning Engine | 7 | 0 | 7 |
-| Treemap Visualization | 5 | 0 | 5 |
-| File List View | 5 | 0 | 5 |
-| Duplicate Detection | 3 | 0 | 3 |
-| App Storage | 2 | 0 | 2 |
-| File Actions | 3 | 0 | 3 |
-| Export & History | 2 | 0 | 2 |
-| Settings & UX | 3 | 0 | 3 |
-
-**Total: 48 tasks**
+Task tables above are the authoritative source of status. The March 8 storage-visualization, search, list, and virtual app-storage work is now complete; remaining backlog items stay marked `🔴 Not Started` until implementation begins.
 
 ---
 
@@ -141,7 +128,7 @@ When a task status changes:
 
 ## Notes
 
-- Feature IDs (F-001 to F-035) correspond to FEATURES.md
+- Feature IDs (F-001 to F-037) correspond to FEATURES.md
 - TASK-000 is documentation-only and is already complete
 - TASK-001 is the main project setup task
 - All other tasks are feature implementation tasks

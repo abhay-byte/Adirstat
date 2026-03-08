@@ -1,8 +1,9 @@
 package com.ivarna.adirstat.presentation.filelist
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -234,6 +234,7 @@ fun FileListScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileListItem(
     file: FileNode,
@@ -245,10 +246,10 @@ private fun FileListItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .pointerInput(file.path) {
-                detectTapGestures(onLongPress = { onLongPress() })
-            }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongPress
+            )
     ) {
         Row(
             modifier = Modifier
@@ -426,16 +427,34 @@ private fun FileDetailBottomSheet(
         
         // Action buttons
         if (file.isVirtual) {
+            val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = MaterialTheme.shapes.medium
             ) {
-                Text(
-                    text = "Protected app-storage summary. You can drill into this item from the list, but it remains read-only.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(12.dp)
-                )
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Protected app-storage summary. You can drill into this item from the list, but it remains read-only.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (packageName != null) {
+                        OutlinedButton(
+                            onClick = {
+                                FileActions.openAppInfo(context, packageName)
+                                onDismiss()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Settings, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Open app details")
+                        }
+                    }
+                }
             }
         } else {
             Row(

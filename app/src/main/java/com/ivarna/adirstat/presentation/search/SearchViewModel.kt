@@ -38,10 +38,10 @@ class SearchViewModel @Inject constructor(
     private var allFiles: List<FileNode> = emptyList()
 
     init {
-        loadAllFiles()
+        refreshIndex()
     }
 
-    private fun loadAllFiles() {
+    fun refreshIndex() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {

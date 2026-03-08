@@ -94,8 +94,8 @@ fun TreemapView(
     }
 }
 
-private const val MIN_BLOCK_WIDTH_DP = 48f
-private const val MIN_BLOCK_HEIGHT_DP = 32f
+private const val MIN_BLOCK_WIDTH_DP = 36f
+private const val MIN_BLOCK_HEIGHT_DP = 24f
 
 private fun groupSmallNodes(
     nodes: List<FileNode>,
@@ -208,14 +208,14 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeLabel(
 ) {
     val blockWidth = rect.width
     val blockHeight = rect.height
-    if (blockWidth < 32f || blockHeight < 18f) return
+    if (blockWidth < 24f || blockHeight < 14f) return
 
     val nameFontSizeSp = when {
-        blockWidth > 200f && blockHeight > 120f -> 13f
-        blockWidth > 120f && blockHeight > 70f -> 11f
-        blockWidth > 70f && blockHeight > 45f -> 10f
-        blockWidth > 45f && blockHeight > 30f -> 8.5f
-        else -> 7.5f
+        blockWidth > 220f && blockHeight > 120f -> 13f
+        blockWidth > 140f && blockHeight > 72f -> 11f
+        blockWidth > 80f && blockHeight > 44f -> 9.5f
+        blockWidth > 42f && blockHeight > 24f -> 7.5f
+        else -> 6f
     }
     val detailFontSizeSp = nameFontSizeSp * 0.80f
 
@@ -231,36 +231,108 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeLabel(
         isAntiAlias = true
     }
 
-    fun clip(text: String, textPaint: android.graphics.Paint): String {
-        var clipped = text
-        while (textPaint.measureText(clipped) > maxTextWidth && clipped.length > 3) {
-            clipped = clipped.dropLast(1)
+    fun fitPaintForText(text: String, startSp: Float, bold: Boolean = false, alpha: Int = 255): android.graphics.Paint? {
+        var sizeSp = startSp
+        while (sizeSp >= 5f) {
+            val candidate = paint(sizeSp, alpha = alpha, bold = bold)
+            if (candidate.measureText(text) <= maxTextWidth) {
+                return candidate
+            }
+            sizeSp -= 0.5f
         }
-        return if (clipped.length < text.length) "$clipped…" else clipped
+        return null
     }
 
-    val namePaint = paint(nameFontSizeSp, bold = true)
-    val detailPaint = paint(detailFontSizeSp, alpha = 205)
+    fun wrapText(text: String, textPaint: android.graphics.Paint, maxLines: Int): List<String>? {
+        if (text.isBlank()) return emptyList()
+        if (textPaint.measureText(text) <= maxTextWidth) return listOf(text)
+
+        val tokens = text.split(' ').filter { it.isNotBlank() }
+        val lines = mutableListOf<String>()
+
+        if (tokens.size > 1) {
+            var current = tokens.first()
+            for (token in tokens.drop(1)) {
+                val candidate = "$current $token"
+                if (textPaint.measureText(candidate) <= maxTextWidth) {
+                    current = candidate
+                } else {
+                    lines.add(current)
+                    current = token
+                }
+            }
+            lines.add(current)
+            if (lines.size <= maxLines && lines.all { textPaint.measureText(it) <= maxTextWidth }) {
+                return lines
+            }
+        }
+
+        val charLines = mutableListOf<String>()
+        var currentChars = ""
+        text.forEach { ch ->
+            val candidate = currentChars + ch
+            if (currentChars.isEmpty() || textPaint.measureText(candidate) <= maxTextWidth) {
+                currentChars = candidate
+            } else {
+                charLines.add(currentChars)
+                currentChars = ch.toString()
+            }
+        }
+        if (currentChars.isNotEmpty()) charLines.add(currentChars)
+        return if (charLines.size <= maxLines) charLines else null
+    }
+
+    fun fitWrappedText(text: String, startSp: Float, maxLines: Int, bold: Boolean = false): Pair<android.graphics.Paint, List<String>>? {
+        var sizeSp = startSp
+        while (sizeSp >= 5f) {
+            val candidatePaint = paint(sizeSp, bold = bold)
+            val lines = wrapText(text, candidatePaint, maxLines)
+            if (lines != null) {
+                return candidatePaint to lines
+            }
+            sizeSp -= 0.5f
+        }
+        return null
+    }
+
     val canvas = drawContext.canvas.nativeCanvas
     val textX = rect.x + padding
-    var y = rect.y + namePaint.textSize + padding
+    var y = rect.y + padding
 
     val baseName = node.virtualLabel ?: node.name
     val displayName = if (node.isVirtual && !baseName.startsWith("🔒")) "🔒 $baseName" else baseName
-    if (blockHeight >= namePaint.textSize + padding * 2) {
-        canvas.drawText(clip(displayName, namePaint), textX, y, namePaint)
-        y += namePaint.textSize + 2f * density
+    val wrappedName = fitWrappedText(displayName, nameFontSizeSp, maxLines = 3, bold = true)
+    var drewName = false
+    if (wrappedName != null) {
+        val (namePaint, lines) = wrappedName
+        val lineHeight = namePaint.textSize * 1.1f
+        val totalHeight = lineHeight * lines.size
+        if (blockHeight >= totalHeight + padding * 2) {
+            lines.forEach { line ->
+                y += namePaint.textSize
+                canvas.drawText(line, textX, y, namePaint)
+                y += (lineHeight - namePaint.textSize)
+            }
+            y += density
+            drewName = true
+        }
     }
 
-    if (blockHeight >= y - rect.y + detailPaint.textSize + padding) {
-        val sizeText = FileSizeFormatter.format(node.sizeBytes)
-        canvas.drawText(clip(sizeText, detailPaint), textX, y, detailPaint)
-        y += detailPaint.textSize + 1f * density
+    val sizeText = FileSizeFormatter.format(node.sizeBytes)
+    val sizePaint = fitPaintForText(sizeText, detailFontSizeSp, alpha = 205)
+    if (drewName && sizePaint != null && blockHeight >= y - rect.y + sizePaint.textSize + padding) {
+        y += sizePaint.textSize
+        canvas.drawText(sizeText, textX, y, sizePaint)
+        y += 1f * density
     }
 
-    if (blockHeight >= y - rect.y + detailPaint.textSize + padding && parentSizeBytes > 0L) {
+    if (drewName && parentSizeBytes > 0L) {
         val pct = node.sizeBytes * 100f / parentSizeBytes.toFloat()
         val pctText = if (pct >= 1f) "${pct.toInt()}%" else "<1%"
-        canvas.drawText(clip(pctText, detailPaint), textX, y, detailPaint)
+        val pctPaint = fitPaintForText(pctText, detailFontSizeSp, alpha = 205)
+        if (pctPaint != null && blockHeight >= y - rect.y + pctPaint.textSize + padding) {
+            y += pctPaint.textSize
+            canvas.drawText(pctText, textX, y, pctPaint)
+        }
     }
 }

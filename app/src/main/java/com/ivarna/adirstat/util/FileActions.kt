@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -13,6 +14,24 @@ import java.io.File
  * Utility class for file operations: open, share, delete
  */
 object FileActions {
+
+    fun openAppInfo(context: Context, packageName: String) {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot open app details: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun getPackageNameFromVirtualPath(path: String): String? {
+        if (!path.startsWith("virtual://")) return null
+        val suffix = path.removePrefix("virtual://")
+        return suffix.substringBefore('/').takeIf { it.isNotBlank() }
+    }
 
     /**
      * Open a file with an external app

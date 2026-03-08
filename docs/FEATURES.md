@@ -6,7 +6,7 @@ This document lists all features for Adirstat with their status and IDs.
 
 ## Feature List
 
-All features are grouped by module. Each feature has an ID (F-001 to F-035), name, description, and status.
+All features are grouped by module. Each feature has an ID (F-001 to F-037), name, description, and status.
 
 ---
 
@@ -40,10 +40,10 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin | 🟡 In Progress |
-| F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.) | 🟡 In Progress |
+| F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin with grouped root density control and readable labels | ✅ Complete |
+| F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.), including distinct app-data styling | ✅ Complete |
 | F-015 | Tap to Drill Down | Navigate into folder when tapping its treemap block | ✅ Complete |
-| F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Home > Downloads > Videos) | 🟡 In Progress |
+| F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Storage > Downloads > Videos) with correct root hiding and back-jump behavior | ✅ Complete |
 | F-017 | Pinch-to-Zoom | Support pinch gestures to zoom treemap in/out | 🔴 Not Started |
 
 ---
@@ -55,7 +55,7 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 | F-018 | Sortable File List | Display flat list sorted by size (default: largest first) | ✅ Complete |
 | F-019 | Sort Options | Sort by: size, name, date modified, extension (ascending/descending) | 🟡 In Progress |
 | F-020 | Filter by Extension/Size/Date | Allow filtering by file extension, size range slider, date range | 🟡 In Progress |
-| F-021 | Wildcard & Regex Search | Search with wildcards (*.mp4) and regex toggle | 🟡 In Progress |
+| F-021 | Wildcard & Regex Search | Search with wildcards (*.mp4) and regex toggle across scanned files plus virtual app-storage nodes | ✅ Complete |
 | F-022 | File Type Grouping | Show file type breakdown with percentage bars | ✅ Complete |
 
 ---
@@ -74,10 +74,10 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-026 | Per-App Storage in Treemap | Show per-app protected storage as virtual nodes in treemap and list/search drill-down flows with APK/Data/Cache breakdown | 🟡 In Progress |
-| F-027 | Open App Info | Tap app storage entry to open system App Info | 🔴 Not Started |
-| F-036 | Virtual App Data Nodes | Display protected app-data nodes as virtual entries with lock styling and read-only drill-down | 🟡 In Progress |
-| F-037 | Virtual App Breakdown Drill-Down | Drill into a virtual app node to inspect APK/Data/Cache segments | 🟡 In Progress |
+| F-026 | Per-App Storage in Treemap | Show per-app protected storage as virtual nodes in treemap and list/search drill-down flows with APK/Data/Cache breakdown | ✅ Complete |
+| F-027 | Open App Info | Open system App Info from app-storage entries in list and treemap detail sheets | ✅ Complete |
+| F-036 | Virtual App Data Nodes | Display protected app-data nodes as virtual entries with lock styling and read-only drill-down | ✅ Complete |
+| F-037 | Virtual App Breakdown Drill-Down | Drill into a virtual app node to inspect APK/Data/Cache segments | ✅ Complete |
 
 ---
 
@@ -119,12 +119,12 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 | Treemap Visualization | F-013, F-014, F-015, F-016, F-017 | 5 🔴 |
 | File List View | F-018, F-019, F-020, F-021, F-022 | 5 🔴 |
 | Duplicate Detection | F-023, F-024, F-025 | 3 🔴 |
-| App Storage | F-026, F-027 | 2 🔴 |
+| App Storage | F-026, F-027, F-036, F-037 | 4 ✅/🔴 mixed |
 | File Actions | F-028, F-029, F-030 | 3 🔴 |
 | Export & History | F-031, F-032 | 2 🔴 |
 | Settings & UX | F-033, F-034, F-035 | 3 🔴 |
 
-**Total: 35 features**
+**Total: 37 features**
 
 ---
 
@@ -145,8 +145,10 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 | F-023 (Duplicate by Name+Size) | F-006 |
 | F-024 (MD5 Duplicates) | F-023 |
 | F-025 (Duplicate Display) | F-023, F-024 |
-| F-026 (List Apps) | QUERY_ALL_PACKAGES permission |
-| F-027 (App Sorting) | F-026 |
+| F-026 (Per-App Storage in Treemap/List/Search) | QUERY_ALL_PACKAGES permission, StorageStatsManager |
+| F-027 (Open App Info) | F-026 |
+| F-036 (Virtual App Data Nodes) | F-026 |
+| F-037 (Virtual App Breakdown Drill-Down) | F-036 |
 | F-028 (Delete Single) | F-006 |
 | F-029 (Batch Delete) | F-028 |
 | F-030 (Share) | F-006 |

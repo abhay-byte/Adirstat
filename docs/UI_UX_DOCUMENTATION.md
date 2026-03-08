@@ -123,8 +123,10 @@ If no partitions found (rare): "No storage volumes detected"
 ### Internal Storage Spotlight
 - The first section is visually emphasized as the device's main storage area
 - Shows total capacity, used/free summary chips, and app/media/file quick pills
+- Uses standard solid Material surfaces from the design system; no translucent/glass styling
 - If a scan exists, the whole spotlight opens the storage map
 - If no scan exists, the spotlight explains that the FAB must be used first
+- After a scan exists, it also exposes a direct "Search scanned files and apps" action from the home screen
 
 ---
 
@@ -175,7 +177,7 @@ If no partitions found (rare): "No storage volumes detected"
 - **Algorithm:** Squarified Treemap
 - **Colors:** Fixed palette by file type (see UI_DESIGN_SYSTEM.md)
 - **Minimum block size:** 4dp x 4dp (below this, show "Other")
-- **Labels:** Show file/folder name + size inside blocks > 60dp
+- **Labels:** Show only full labels that fit; titles may wrap to 3 lines, are never ellipsized, and size/percent text appears only when the full title is shown
 
 ### Bottom Sheet Content (on block tap)
 
@@ -185,7 +187,7 @@ If no partitions found (rare): "No storage volumes detected"
 | Path | Secondary, 12sp, gray |
 | Size | "XX.X GB" or "XX.X MB" |
 | Type | File type category |
-| Actions Row | [Details] [Share] [Delete] |
+| Actions Row | Real files/folders: [Open] [Share] [Delete]; virtual app nodes: [Open app details] |
 
 ### Breadcrumb
 - Hidden at root level
@@ -215,6 +217,7 @@ The treemap displays a second root-level layer of virtual app nodes sourced from
 - Visual treatment: semi-transparent fill + diagonal stripe texture
 - Drill-down shows `APK`, `Data`, and `Cache`
 - Virtual nodes are read-only, but they now appear in list/search browsing as read-only folders with the same drill-down
+- Their detail sheet also includes an `Open app details` action to jump into the Android system App Info page
 
 ### Root-Level Treemap Composition
 The treemap root combines two sources:
@@ -278,6 +281,7 @@ The treemap root combines two sources:
 - Single tap on folder → Navigate into that folder
 - Single tap on file → Bottom sheet
 - Long-press on any row → Bottom sheet
+- Long-press on a virtual app folder → Bottom sheet with a direct `Open app details` action
 - System back inside a folder → Navigate to parent folder
 - Tap sort → Show dropdown
 - Tap filter chip → Apply filter
@@ -285,7 +289,7 @@ The treemap root combines two sources:
 ### List/Treemap Toggle Behavior
 - Embedded list view inside Treemap now uses the full raw child list for the current level, so app-data virtual nodes are not dropped behind treemap grouping
 - Dedicated File List screen shows real folders plus virtual app-data folders at the root
-- Tapping a directory or virtual app folder in list view drills into it directly
+- Tapping a directory or virtual app folder in list view drills into it directly with the same single-tap behavior used in the dedicated File List screen
 
 ---
 
@@ -392,6 +396,7 @@ The treemap root combines two sources:
 | Open | Intent.ACTION_VIEW with MIME type |
 | Share | Intent.ACTION_SEND via ShareSheet |
 | Delete | Confirmation dialog → Delete |
+| Open app details | For virtual app folders only, launches `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` |
 
 ### Delete Confirmation
 - Title: "Delete [filename]?"
@@ -455,6 +460,7 @@ The treemap root combines two sources:
 - Tap directory result → Open that directory in the File List screen
 - Tap file result → Bottom sheet with Open / Share / Show folder actions
 - Tap search → Keyboard appears, focus TextField
+- Search data refreshes when the screen resumes so newly scanned content appears without restarting the app
 
 ---
 
