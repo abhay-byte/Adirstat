@@ -1,0 +1,1180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.13.2" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.2)" variant="all" version="8.13.2">
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        if (bytes &lt; 1024 * 1024) return String.format(&quot;%.1f KB&quot;, bytes / 1024.0)"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/FileSizeFormatter.kt"
+            line="29"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        if (bytes &lt; 1024 * 1024 * 1024) return String.format(&quot;%.1f MB&quot;, bytes / (1024.0 * 1024))"
+        errorLine2="                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/FileSizeFormatter.kt"
+            line="30"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        return String.format(&quot;%.2f GB&quot;, bytes / (1024.0 * 1024 * 1024))"
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/FileSizeFormatter.kt"
+            line="31"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        bytes >= 1_073_741_824L -> String.format(&quot;%.2fGB&quot;, bytes / 1_073_741_824.0)"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/FileSystemDataSource.kt"
+            line="264"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        bytes >= 1_048_576L -> String.format(&quot;%.2fMB&quot;, bytes / 1_048_576.0)"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/FileSystemDataSource.kt"
+            line="265"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        bytes >= 1_024L -> String.format(&quot;%.2fKB&quot;, bytes / 1_024.0)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/FileSystemDataSource.kt"
+            line="266"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="            bytes >= 1_000_000_000 -> String.format(&quot;%.1f GB&quot;, bytes / 1_000_000_000.0)"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/history/HistoryViewModel.kt"
+            line="74"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="            bytes >= 1_000_000 -> String.format(&quot;%.1f MB&quot;, bytes / 1_000_000.0)"
+        errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/history/HistoryViewModel.kt"
+            line="75"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="            bytes >= 1_000 -> String.format(&quot;%.1f KB&quot;, bytes / 1_000.0)"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/history/HistoryViewModel.kt"
+            line="76"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        bytes >= 1_073_741_824L -> String.format(&quot;%.1f GB&quot;, bytes / 1_073_741_824.0)"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="120"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        bytes >= 1_048_576L -> String.format(&quot;%.1f MB&quot;, bytes / 1_048_576.0)"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="121"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        bytes >= 1_024L -> String.format(&quot;%.1f KB&quot;, bytes / 1_024.0)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="122"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 33 (current min is 24): `android.Manifest.permission#READ_MEDIA_IMAGES`"
+        errorLine1="            hasMediaImagesAccess = checkMediaPermission(android.Manifest.permission.READ_MEDIA_IMAGES),"
+        errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="43"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 33 (current min is 24): `android.Manifest.permission#READ_MEDIA_VIDEO`"
+        errorLine1="            hasMediaVideoAccess = checkMediaPermission(android.Manifest.permission.READ_MEDIA_VIDEO),"
+        errorLine2="                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="44"
+            column="56"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 33 (current min is 24): `android.Manifest.permission#READ_MEDIA_AUDIO`"
+        errorLine1="            hasMediaAudioAccess = checkMediaPermission(android.Manifest.permission.READ_MEDIA_AUDIO),"
+        errorLine2="                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="45"
+            column="56"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 30 (current min is 24): `android.provider.Settings#ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION`"
+        errorLine1="                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/permission/PermissionScreen.kt"
+            line="146"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 24): `android.content.Context#STORAGE_STATS_SERVICE`"
+        errorLine1="        context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="27"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 26 (current min is 24): `android.content.Context#STORAGE_STATS_SERVICE`"
+        errorLine1="        context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="24"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.Instant#now`"
+        errorLine1="            appendLine(&quot;Timestamp   : ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}&quot;)"
+        errorLine2="                                                                                     ~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/crash/CrashHandler.kt"
+            line="52"
+            column="86"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26, or core library desugaring (current min is 24): `java.time.format.DateTimeFormatter#format`"
+        errorLine1="            appendLine(&quot;Timestamp   : ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}&quot;)"
+        errorLine2="                                                                      ~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/crash/CrashHandler.kt"
+            line="52"
+            column="71"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26, or core library desugaring (current min is 24): `java.time.format.DateTimeFormatter#ISO_INSTANT`"
+        errorLine1="            appendLine(&quot;Timestamp   : ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}&quot;)"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/crash/CrashHandler.kt"
+            line="52"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 30 (current min is 24): `android.os.Environment#isExternalStorageManager`"
+        errorLine1="        android.os.Environment.isExternalStorageManager()"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/permission/PermissionScreen.kt"
+            line="255"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Class requires API level 26 (current min is 24): `android.app.usage.StorageStatsManager`"
+        errorLine1="        context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager"
+        errorLine2="                                                                   ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="27"
+            column="68"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStatsManager#getTotalBytes`"
+        errorLine1="            val total = storageStatsManager.getTotalBytes(StorageManager.UUID_DEFAULT)"
+        errorLine2="                                            ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="45"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26 (current min is 24): `android.os.storage.StorageManager#UUID_DEFAULT`"
+        errorLine1="            val total = storageStatsManager.getTotalBytes(StorageManager.UUID_DEFAULT)"
+        errorLine2="                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="45"
+            column="59"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStatsManager#getFreeBytes`"
+        errorLine1="            val free = storageStatsManager.getFreeBytes(StorageManager.UUID_DEFAULT)"
+        errorLine2="                                           ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="46"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26 (current min is 24): `android.os.storage.StorageManager#UUID_DEFAULT`"
+        errorLine1="            val free = storageStatsManager.getFreeBytes(StorageManager.UUID_DEFAULT)"
+        errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="46"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStatsManager#queryStatsForPackage`"
+        errorLine1="                val stats = storageStatsManager.queryStatsForPackage("
+        errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="94"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26 (current min is 24): `android.os.storage.StorageManager#UUID_DEFAULT`"
+        errorLine1="                    StorageManager.UUID_DEFAULT,  // internal storage UUID"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="95"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getAppBytes`"
+        errorLine1="                    apkBytes = stats.appBytes,"
+        errorLine2="                                     ~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="109"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getDataBytes`"
+        errorLine1="                    dataBytes = stats.dataBytes,"
+        errorLine2="                                      ~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="110"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getCacheBytes`"
+        errorLine1="                    cacheBytes = stats.cacheBytes,"
+        errorLine2="                                       ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="111"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getAppBytes`"
+        errorLine1="                    totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes,"
+        errorLine2="                                       ~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="112"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getCacheBytes`"
+        errorLine1="                    totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes,"
+        errorLine2="                                                                          ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="112"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getDataBytes`"
+        errorLine1="                    totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes,"
+        errorLine2="                                                        ~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="112"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getAppBytes`"
+        errorLine1="                Log.d(TAG, &quot;${pkg.packageName}: apk=${stats.appBytes} data=${stats.dataBytes} cache=${stats.cacheBytes}&quot;)"
+        errorLine2="                                                            ~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="116"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getCacheBytes`"
+        errorLine1="                Log.d(TAG, &quot;${pkg.packageName}: apk=${stats.appBytes} data=${stats.dataBytes} cache=${stats.cacheBytes}&quot;)"
+        errorLine2="                                                                                                            ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="116"
+            column="109"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getDataBytes`"
+        errorLine1="                Log.d(TAG, &quot;${pkg.packageName}: apk=${stats.appBytes} data=${stats.dataBytes} cache=${stats.cacheBytes}&quot;)"
+        errorLine2="                                                                                   ~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/StorageStatsDataSource.kt"
+            line="116"
+            column="84"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Class requires API level 26 (current min is 24): `android.app.usage.StorageStatsManager`"
+        errorLine1="        context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager"
+        errorLine2="                                                                   ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="24"
+            column="68"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStatsManager#queryStatsForPackage`"
+        errorLine1="                val stats = storageStatsManager.queryStatsForPackage("
+        errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="40"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Field requires API level 26 (current min is 24): `android.os.storage.StorageManager#UUID_DEFAULT`"
+        errorLine1="                    StorageManager.UUID_DEFAULT,"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="41"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getAppBytes`"
+        errorLine1="                val totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes"
+        errorLine2="                                       ~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="45"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getCacheBytes`"
+        errorLine1="                val totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes"
+        errorLine2="                                                                          ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="45"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getDataBytes`"
+        errorLine1="                val totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes"
+        errorLine2="                                                        ~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="45"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getAppBytes`"
+        errorLine1="                if (stats.appBytes > 0) {"
+        errorLine2="                          ~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="55"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getAppBytes`"
+        errorLine1="                            size = stats.appBytes,"
+        errorLine2="                                         ~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="61"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getAppBytes`"
+        errorLine1="                            virtualLabel = &quot;APK · ${formatBytes(stats.appBytes)}&quot;"
+        errorLine2="                                                                      ~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="64"
+            column="71"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getDataBytes`"
+        errorLine1="                if (stats.dataBytes > 0) {"
+        errorLine2="                          ~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="68"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getDataBytes`"
+        errorLine1="                            size = stats.dataBytes,"
+        errorLine2="                                         ~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="74"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getDataBytes`"
+        errorLine1="                            virtualLabel = &quot;Data · ${formatBytes(stats.dataBytes)}&quot;"
+        errorLine2="                                                                       ~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="77"
+            column="72"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getCacheBytes`"
+        errorLine1="                if (stats.cacheBytes > 0) {"
+        errorLine2="                          ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="81"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getCacheBytes`"
+        errorLine1="                            size = stats.cacheBytes,"
+        errorLine2="                                         ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="87"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 24): `android.app.usage.StorageStats#getCacheBytes`"
+        errorLine1="                            virtualLabel = &quot;Cache · ${formatBytes(stats.cacheBytes)}&quot;"
+        errorLine2="                                                                        ~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/data/source/VirtualNodeBuilder.kt"
+            line="90"
+            column="73"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;/sdcard/&quot;; use `Environment.getExternalStorageDirectory().getPath()` instead"
+        errorLine1="                            placeholder = { Text(&quot;/sdcard/folder&quot;) },"
+        errorLine2="                                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/settings/SettingsScreen.kt"
+            line="306"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of Gradle than 8.13 is available: 8.14.4"
+        errorLine1="distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-bin.zip"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/repos/Adirstat/gradle/wrapper/gradle-wrapper.properties"
+            line="3"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.core:core-ktx than 1.15.0 is available: 1.17.0"
+        errorLine1="    implementation(&quot;androidx.core:core-ktx:1.15.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="101"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.8.7 is available: 2.10.0"
+        errorLine1="    implementation(&quot;androidx.lifecycle:lifecycle-runtime-ktx:2.8.7&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="102"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.9.3 is available: 1.12.4"
+        errorLine1="    implementation(&quot;androidx.activity:activity-compose:1.9.3&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="103"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2024.12.01 is available: 2026.02.01"
+        errorLine1="    implementation(platform(&quot;androidx.compose:compose-bom:2024.12.01&quot;))"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="106"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.navigation:navigation-compose than 2.8.5 is available: 2.9.7"
+        errorLine1="    implementation(&quot;androidx.navigation:navigation-compose:2.8.5&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="114"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.hilt:hilt-navigation-compose than 1.1.0 is available: 1.3.0"
+        errorLine1="    implementation(&quot;androidx.hilt:hilt-navigation-compose:1.1.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="119"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-runtime than 2.6.1 is available: 2.8.4"
+        errorLine1="    implementation(&quot;androidx.room:room-runtime:2.6.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="122"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-ktx than 2.6.1 is available: 2.8.4"
+        errorLine1="    implementation(&quot;androidx.room:room-ktx:2.6.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="123"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-compiler than 2.6.1 is available: 2.8.4"
+        errorLine1="    ksp(&quot;androidx.room:room-compiler:2.6.1&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="124"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.datastore:datastore-preferences than 1.0.0 is available: 1.2.0"
+        errorLine1="    implementation(&quot;androidx.datastore:datastore-preferences:1.0.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="127"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.work:work-runtime-ktx than 2.9.0 is available: 2.11.1"
+        errorLine1="    implementation(&quot;androidx.work:work-runtime-ktx:2.9.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="130"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.hilt:hilt-work than 1.1.0 is available: 1.3.0"
+        errorLine1="    implementation(&quot;androidx.hilt:hilt-work:1.1.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="131"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.hilt:hilt-compiler than 1.1.0 is available: 1.3.0"
+        errorLine1="    ksp(&quot;androidx.hilt:hilt-compiler:1.1.0&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="132"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.test.ext:junit than 1.2.1 is available: 1.3.0"
+        errorLine1="    androidTestImplementation(&quot;androidx.test.ext:junit:1.2.1&quot;)"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="144"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.test.espresso:espresso-core than 3.6.1 is available: 3.7.0"
+        errorLine1="    androidTestImplementation(&quot;androidx.test.espresso:espresso-core:3.6.1&quot;)"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="145"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2024.12.01 is available: 2026.02.01"
+        errorLine1="    androidTestImplementation(platform(&quot;androidx.compose:compose-bom:2024.12.01&quot;))"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="146"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.dagger:hilt-android than 2.50 is available: 2.59.2"
+        errorLine1="    implementation(&quot;com.google.dagger:hilt-android:2.50&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="117"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.dagger:hilt-android-compiler than 2.50 is available: 2.59.2"
+        errorLine1="    ksp(&quot;com.google.dagger:hilt-android-compiler:2.50&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="118"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.7.3 is available: 1.10.2"
+        errorLine1="    implementation(&quot;org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="135"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.code.gson:gson than 2.10.1 is available: 2.13.2"
+        errorLine1="    implementation(&quot;com.google.code.gson:gson:2.10.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="138"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-test than 1.7.3 is available: 1.10.2"
+        errorLine1="    testImplementation(&quot;org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="142"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of io.mockk:mockk than 1.13.9 is available: 1.14.9"
+        errorLine1="    testImplementation(&quot;io.mockk:mockk:1.13.9&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="143"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/treemap/TreemapView.kt"
+            line="37"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `Build.VERSION.SDK_INT >= Build.VERSION_CODES.M` is always true here (`SDK_INT` ≥ 24 and &lt; 30)"
+        errorLine1="                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {"
+        errorLine2="                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/dashboard/DashboardScreen.kt"
+            line="166"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_launcher_foreground` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_launcher_foreground.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.app_description` appears to be unused"
+        errorLine1="    &lt;string name=&quot;app_description&quot;>See exactly what\&apos;s eating your storage.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icon used as round icon did not have a circular shape">
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher_round.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icon used as round icon did not have a circular shape">
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher_round.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icon used as round icon did not have a circular shape">
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher_round.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icon used as round icon did not have a circular shape">
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher_round.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icon used as round icon did not have a circular shape">
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive icon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive roundIcon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="IconLocation"
+        message="Found bitmap drawable `res/drawable/ic_launcher_foreground_image.png` in densityless folder">
+        <location
+            file="src/main/res/drawable/ic_launcher_foreground_image.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.png, ic_launcher_round.png">
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher_round.png"/>
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.png, ic_launcher_round.png">
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher_round.png"/>
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.png, ic_launcher_round.png">
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher_round.png"/>
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.png, ic_launcher_round.png">
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher_round.png"/>
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconDuplicates"
+        message="The following unrelated icon files have identical contents: ic_launcher.png, ic_launcher_round.png">
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"/>
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                            data = android.net.Uri.parse(&quot;package:${app.packageName}&quot;)"
+        errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/appstats/AppStatsScreen.kt"
+            line="127"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                            data = android.net.Uri.parse(&quot;package:${app.packageName}&quot;)"
+        errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/appstats/AppStatsScreen.kt"
+            line="127"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit().putLong(LAST_CRASH_TIME, System.currentTimeMillis()).apply()"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/crash/CrashHandler.kt"
+            line="111"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                intent.data = android.net.Uri.parse(&quot;package:${context.packageName}&quot;)"
+        errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/dashboard/DashboardScreen.kt"
+            line="168"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                intent.data = android.net.Uri.parse(&quot;package:${context.packageName}&quot;)"
+        errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/dashboard/DashboardScreen.kt"
+            line="168"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;package:$packageName&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/FileActions.kt"
+            line="21"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;package:$packageName&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/FileActions.kt"
+            line="21"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    data = Uri.parse(&quot;package:${context.packageName}&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="117"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    data = Uri.parse(&quot;package:${context.packageName}&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="117"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;package:${context.packageName}&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="126"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;package:${context.packageName}&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="126"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;package:${context.packageName}&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="139"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;package:${context.packageName}&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/util/PermissionManager.kt"
+            line="139"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                    prefs.edit().putBoolean(&quot;permission_screen_visited&quot;, true).apply()"
+        errorLine2="                    ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/permission/PermissionScreen.kt"
+            line="75"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                    prefs.edit().putBoolean(&quot;permission_screen_visited&quot;, false).apply()"
+        errorLine2="                    ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/permission/PermissionScreen.kt"
+            line="79"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                prefs.edit().putBoolean(&quot;permission_screen_visited&quot;, true).apply()"
+        errorLine2="                ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/ivarna/adirstat/presentation/permission/PermissionScreen.kt"
+            line="180"
+            column="17"/>
+    </issue>
+
+</issues>

@@ -52,10 +52,6 @@ fun DashboardScreen(
     fun requestLeaveScanConfirmation() {
         showLeaveScanDialog = true
     }
-
-    BackHandler(enabled = uiState.isScanning) {
-        requestLeaveScanConfirmation()
-    }
     
     // Reload data on resume - critical for updating after permissions granted
     DisposableEffect(lifecycleOwner) {
@@ -74,14 +70,6 @@ fun DashboardScreen(
     ) {
         // Check permissions after returning from settings
         viewModel.checkPermissions()
-    }
-    
-    // Navigate to treemap after scan completes
-    LaunchedEffect(uiState.scannedVolumePath) {
-        uiState.scannedVolumePath?.let { path ->
-            onNavigateToTreemap(path)
-            viewModel.onNavigatedToTreemap()
-        }
     }
     
     Scaffold(
@@ -107,23 +95,15 @@ fun DashboardScreen(
             )
         },
         floatingActionButton = {
-            if (uiState.permissionState.hasManageExternalStorage && !uiState.isScanning && uiState.storageVolumes.isNotEmpty()) {
+            if (uiState.permissionState.hasManageExternalStorage && uiState.storageVolumes.isNotEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = { 
-                        uiState.storageVolumes.firstOrNull()?.let { viewModel.startScan(it.path) }
+                        uiState.storageVolumes.firstOrNull()?.let { onNavigateToTreemap(it.path) }
                     },
                     icon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    text = { Text("Scan Storage") },
+                    text = { Text("View Storage") },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            } else if (uiState.isScanning) {
-                ExtendedFloatingActionButton(
-                    onClick = { requestLeaveScanConfirmation() },
-                    icon = { Icon(Icons.Default.Close, contentDescription = null) },
-                    text = { Text("Cancel Scan") },
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }
@@ -169,15 +149,6 @@ fun DashboardScreen(
                                 permissionLauncher.launch(intent)
                             }
                         }
-                    )
-                }
-                uiState.isScanning -> {
-                    ScanProgressContent(
-                        progress = uiState.scanProgress,
-                        status = uiState.scanStatusText,
-                        scannedFiles = uiState.scannedFiles,
-                        scannedBytes = uiState.scannedBytes,
-                        onCancel = { requestLeaveScanConfirmation() }
                     )
                 }
                 else -> {
@@ -282,91 +253,6 @@ private fun PermissionRequestContent(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-@Composable
-private fun ScanProgressContent(
-    progress: Float,
-    status: String,
-    scannedFiles: Long,
-    scannedBytes: Long,
-    onCancel: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(80.dp),
-            strokeWidth = 8.dp
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "Scanning storage…",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (progress > 0f) {
-            LinearProgressIndicator(
-                progress = { progress.coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "${(progress * 100).toInt()}% complete",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-        } else {
-            Text(
-                text = "Working through your files. Progress becomes visible as items are discovered.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = if (status.isNotBlank()) status else "Preparing scan…",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "$scannedFiles files • ${FileSizeFormatter.format(scannedBytes)} scanned",
-            style = MaterialTheme.typography.labelLarge,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "Large scans can take time on devices with thousands of files. Keep the app open and wait for completion.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        OutlinedButton(onClick = onCancel) {
-            Text("Cancel")
-        }
     }
 }
 

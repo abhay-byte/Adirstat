@@ -99,38 +99,66 @@ class TreemapViewModel @Inject constructor(
     }
 
     fun loadTreemap(volumePath: String) {
-        // Prevent double-load: if already scanning this volume or already have data loaded, skip
+        // Prevent double-scan: if already scanning this volume or already have data loaded, skip
         if (currentVolumePath == volumePath && (_uiState.value.isScanning || realRootNode != null)) {
             return
         }
+        
+        // If this is the same path we just scanned from dashboard, wait for cache to be ready
+        // by doing a quick retry loop instead of immediately starting a new scan
+        if (currentVolumePath == volumePath && _uiState.value.isScanning) {
+            return
+        }
+        
         currentVolumePath = volumePath
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            try {
-                // First try to load from cache
+            
+            // Try to load from cache first, with retry for up to 2 seconds
+            // This handles the case where dashboard just finished scanning and saved to cache
+            var cachedNode: FileNode.Directory? = null
+            var cacheLoadAttempt = 0
+            val maxAttempts = 4 // 4 attempts * 500ms = 2 seconds max wait
+            
+            while (cachedNode == null && cacheLoadAttempt < maxAttempts) {
                 val result = scanStorageUseCase.getCachedScan(volumePath)
                 result.fold(
                     onSuccess = { node ->
                         if (node != null) {
-                            buildAndDisplayRoot(node)
+                            // Found cached data - use it
+                            cachedNode = node
                         } else {
-                            // No cached data - start a new scan
-                            startScan(volumePath)
+                            // No cached data yet - wait and retry (dashboard might still be saving)
+                            cacheLoadAttempt++
+                            if (cacheLoadAttempt < maxAttempts) {
+                                kotlinx.coroutines.delay(500)
+                            }
                         }
                     },
                     onFailure = {
-                        // Error loading cache - start a new scan
-                        startScan(volumePath)
+                        // On error, wait and retry
+                        cacheLoadAttempt++
+                        if (cacheLoadAttempt < maxAttempts) {
+                            kotlinx.coroutines.delay(500)
+                        }
                     }
                 )
-            } catch (e: Exception) {
-                // Exception - start a new scan
+            }
+            
+            if (cachedNode != null) {
+                buildAndDisplayRoot(cachedNode!!)
+            } else {
+                // No cached data after retries - start a new scan
                 startScan(volumePath)
             }
         }
     }
     
     private fun startScan(volumePath: String) {
+        // Guard against double scan
+        if (_uiState.value.isScanning) {
+            return
+        }
         viewModelScope.launch {
             _uiState.update {
                 it.copy(

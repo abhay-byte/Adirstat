@@ -37,17 +37,11 @@ class DashboardViewModel @Inject constructor(
         val lastScanTime: Long? = null,
         val neverScanned: Boolean = false,
         val permissionStatus: PermissionManager.PermissionStatus? = null,
-        val isScanning: Boolean = false,
-        val scanProgress: Float = 0f,
-        val scanStatusText: String = "",
-        val scannedFiles: Long = 0L,
-        val scannedBytes: Long = 0L,
         val isRefreshingBreakdown: Boolean = false,
         val error: String? = null,
         // UI compatibility fields
         val permissionState: PermissionState = PermissionState(),
-        val storageVolumes: List<StorageVolumeInfo> = emptyList(),
-        val scannedVolumePath: String? = null
+        val storageVolumes: List<StorageVolumeInfo> = emptyList()
     )
     
     data class PermissionState(
@@ -144,69 +138,6 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun startScan(path: String = "/storage/emulated/0") {
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isScanning = true,
-                    scanProgress = 0f,
-                    scanStatusText = "Preparing scan…",
-                    scannedFiles = 0L,
-                    scannedBytes = 0L,
-                    error = null
-                )
-            }
-            try {
-                storageRepository.scanVolume(
-                    volumePath = path,
-                    excludedPaths = emptyList(),
-                    minFileSize = 0
-                ).collect { progress ->
-                    when (progress) {
-                        is com.ivarna.adirstat.data.source.ScanProgress.Counting -> {
-                            _uiState.update { it.copy(scanStatusText = "Preparing scan…") }
-                        }
-                        is com.ivarna.adirstat.data.source.ScanProgress.Scanning -> {
-                            _uiState.update {
-                                it.copy(
-                                    scanProgress = if (progress.totalFiles > 0L) {
-                                        progress.progressPercent / 100f
-                                    } else {
-                                        0f
-                                    },
-                                    scanStatusText = progress.currentPath,
-                                    scannedFiles = progress.filesScanned,
-                                    scannedBytes = progress.totalSize
-                                )
-                            }
-                        }
-                        is com.ivarna.adirstat.data.source.ScanProgress.Complete -> {
-                            val directoryNode = progress.rootNode as? com.ivarna.adirstat.domain.model.FileNode.Directory
-                            if (directoryNode != null) {
-                                storageRepository.saveScanResult(directoryNode, path)
-                            }
-                            _uiState.update {
-                                it.copy(
-                                    scanProgress = 1f,
-                                    scanStatusText = "Scan complete",
-                                    scannedFiles = progress.totalFiles,
-                                    scannedBytes = progress.totalSize
-                                )
-                            }
-                        }
-                        else -> Unit
-                    }
-                }
-                loadDashboardData()
-                _uiState.update { it.copy(scannedVolumePath = path) }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Scan failed: ${e.message}") }
-            } finally {
-                _uiState.update { it.copy(isScanning = false, scanProgress = 0f) }
-            }
-        }
-    }
-    
     fun checkPermissions() {
         viewModelScope.launch {
             val permissions = permissionManager.checkAllPermissions()
@@ -219,9 +150,5 @@ class DashboardViewModel @Inject constructor(
             // Reload data after permission check
             loadDashboardData()
         }
-    }
-    
-    fun onNavigatedToTreemap() {
-        _uiState.update { it.copy(scannedVolumePath = null) }
     }
 }

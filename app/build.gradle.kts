@@ -22,8 +22,8 @@ android {
         applicationId = "com.ivarna.adirstat"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
         resourceConfigurations += listOf("en")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -89,6 +89,10 @@ android {
                 "/META-INF/*.version"
             )
         }
+    }
+
+    lint {
+        baseline = file("lint-baseline.xml")
     }
 }
 
