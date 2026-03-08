@@ -19,6 +19,7 @@
 | [progress/TODO.md](progress/TODO.md) | Task tracking for all features and setup | 2026-03-08 |
 | [progress/ONGOING.md](progress/ONGOING.md) | Currently in-progress tasks | 2026-03-08 |
 | [progress/FINISHED.md](progress/FINISHED.md) | Completed tasks | 2026-03-08 |
+| [release/v1.0.1.md](release/v1.0.1.md) | GitHub release notes for version 1.0.1 | 2026-03-08 |
 | [fastlane/README.md](../fastlane/README.md) | Fastlane CI/CD setup guide | 2026-03-07 |
 | [fastlane/Appfile](../fastlane/Appfile) | Fastlane package configuration | 2026-03-07 |
 | [fastlane/Fastfile](../fastlane/Fastfile) | Fastlane lanes for CI/CD | 2026-03-07 |
@@ -42,6 +43,7 @@ When making changes to the app, immediately update ALL affected documents:
 | Bug Fixed | FEATURES.md (if affects feature behavior), SRS.md (if requirement affected), progress/TODO.md |
 | Task Started | progress/ONGOING.md (move from TODO), progress/TODO.md (mark in-progress) |
 | Task Completed | progress/FINISHED.md (add completed task), progress/ONGOING.md (remove), progress/TODO.md (mark complete) |
+| Major Change / Release | README.md (release checklist + version), release/*.md (new notes), progress/FINISHED.md, progress/ONGOING.md, build.gradle.kts (version), GitHub release/tag |
 | CI/CD Change | fastlane/Fastfile, fastlane/README.md, fastlane/metadata/ (update lanes, env vars, changelogs) |
 | Crash Handler Change | CRASH_HANDLER.md (update implementation details) |
 
@@ -73,6 +75,7 @@ When making changes to the app, immediately update ALL affected documents:
 ### Distribution
 - Google Play Store
 - F-Droid
+- GitHub Releases
 
 ### Primary Locales
 - en-US (primary)
@@ -81,6 +84,43 @@ When making changes to the app, immediately update ALL affected documents:
 ---
 
 ## Documentation Version
-This documentation is current for Adirstat version **1.0.0** (initial release).
+This documentation is current for Adirstat version **1.0.1**.
+
+---
+
+## Required Release Process For Major Changes
+
+Any major user-visible change must end with a release like the v1.0.1 process.
+
+### Treat these as release-triggering changes
+- Search/navigation behavior changes
+- Treemap/list/dashboard UI changes
+- Launcher icon or branding changes
+- Permission flow changes
+- Storage scan, cache, or release-build behavior changes
+- Any major bug-fix bundle that changes user workflows
+
+### Mandatory release checklist
+1. Update every affected document listed in this README.
+2. Bump `versionCode` and `versionName` in the Android app module.
+3. Rebuild debug and release artifacts.
+4. Optimize release size when possible (`minify`, resource shrinking, packaging cleanup).
+5. Ensure a signing keystore and properties file exist under `/home/flux/repos/key/`.
+6. Generate/update release notes under `docs/release/`.
+7. Use an absolute GitHub-hosted image URL in release notes; relative local image paths do not render on GitHub releases.
+8. Create or update the Git tag and GitHub release.
+9. Upload the signed release APK to the GitHub release.
+10. Commit and push all code and documentation changes.
+
+### Standard local signing layout
+- Keystore: `/home/flux/repos/key/release.jks`
+- Properties: `/home/flux/repos/key/release.properties`
+- Credentials reference: `/home/flux/repos/key/credentials.txt`
+
+The properties file must contain:
+- `storeFile`
+- `storePassword`
+- `keyAlias`
+- `keyPassword`
 
 For questions or clarifications, refer to the relevant document or consult the [PROBLEM_STATEMENT.md](PROBLEM_STATEMENT.md) for context.

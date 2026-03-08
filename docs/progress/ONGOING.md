@@ -12,6 +12,10 @@ No active round tasks. The storage visualization, list browsing, search, and vir
 
 ## Recently Completed (March 8, 2026)
 
+### Bug Fix Round 17 - Release Docs Polish
+- Documented the mandatory major-change release workflow in the docs index
+- Fixed GitHub release notes to use a GitHub-hosted icon URL instead of a local relative path
+
 ### Bug Fix Round 16 - Scoped Search + Release Shrink
 - Removed the dashboard home search entry points so search is only launched from scan screens
 - Scoped search to the active scanned path while keeping virtual app-storage results available inside internal storage scans
