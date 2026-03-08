@@ -20,6 +20,9 @@ data class SearchUiState(
     val results: List<FileNode> = emptyList(),
     val isSearching: Boolean = false,
     val isLoading: Boolean = true,
+    val hasIndexedFiles: Boolean = false,
+    val activeRootPath: String? = null,
+    val scopePath: String? = null,
     val useRegex: Boolean = false,
     val useWildcard: Boolean = false,
     val error: String? = null
@@ -41,48 +44,56 @@ class SearchViewModel @Inject constructor(
         refreshIndex()
     }
 
-    fun refreshIndex() {
+    fun refreshIndex(rootPath: String? = null, scopePath: String? = null) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                // Load files from cached scans - try internal storage first
-                val result = scanStorageUseCase.getCachedScan("/storage/emulated/0")
-                result.fold(
-                    onSuccess = { node ->
-                        if (node != null) {
-                            val realNodes = flattenFileNode(node)
-                            val appNodes = virtualNodeBuilder.buildAppVirtualNodes()
-                                .flatMap { flattenFileNode(it) }
-                            allFiles = (realNodes + appNodes)
-                                .distinctBy { it.path }
-                                .sortedByDescending { it.sizeBytes }
-                        }
-                    },
-                    onFailure = { /* ignore */ }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    activeRootPath = rootPath ?: it.activeRootPath,
+                    scopePath = scopePath ?: it.scopePath,
+                    error = null
                 )
-                
-                // If no files, try other common paths
-                if (allFiles.isEmpty()) {
-                    val primaryStorage = android.os.Environment.getExternalStorageDirectory()
-                    val altResult = scanStorageUseCase.getCachedScan(primaryStorage.absolutePath)
-                    altResult.fold(
-                        onSuccess = { node ->
-                            if (node != null) {
-                                val realNodes = flattenFileNode(node)
-                                val appNodes = virtualNodeBuilder.buildAppVirtualNodes()
-                                    .flatMap { flattenFileNode(it) }
-                                allFiles = (realNodes + appNodes)
-                                    .distinctBy { it.path }
-                                    .sortedByDescending { it.sizeBytes }
-                            }
-                        },
-                        onFailure = { /* ignore */ }
+            }
+            try {
+                val normalizedRootPath = rootPath?.takeIf { it.isNotBlank() }
+                val result = if (normalizedRootPath != null) {
+                    scanStorageUseCase.getCachedScan(normalizedRootPath)
+                } else {
+                    scanStorageUseCase.getLastScanResult()
+                }
+
+                val rootNode = result.getOrNull()
+                val realNodes = rootNode?.let(::flattenFileNode).orEmpty()
+                val effectiveRootPath = normalizedRootPath ?: rootNode?.path
+                val appNodes = if (effectiveRootPath == "/storage/emulated/0") {
+                    virtualNodeBuilder.buildAppVirtualNodes().flatMap { flattenFileNode(it) }
+                } else {
+                    emptyList()
+                }
+
+                allFiles = (realNodes + appNodes)
+                    .distinctBy { it.path }
+                    .sortedByDescending { it.sizeBytes }
+
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        hasIndexedFiles = allFiles.isNotEmpty(),
+                        activeRootPath = effectiveRootPath,
+                        scopePath = scopePath ?: it.scopePath,
+                        results = if (it.query.isBlank()) emptyList() else performSearch(it.query)
                     )
                 }
-                
-                _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                allFiles = emptyList()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        hasIndexedFiles = false,
+                        results = emptyList(),
+                        error = e.message
+                    )
+                }
             }
         }
     }
@@ -148,9 +159,11 @@ class SearchViewModel @Inject constructor(
 
     private fun searchSimple(query: String): List<FileNode> {
         return allFiles.filter { file ->
-            file.name.contains(query, ignoreCase = true) ||
-            file.path.contains(query, ignoreCase = true) ||
-            (file.virtualLabel?.contains(query, ignoreCase = true) == true)
+            matchesScope(file) && (
+                file.name.contains(query, ignoreCase = true) ||
+                file.path.contains(query, ignoreCase = true) ||
+                (file.virtualLabel?.contains(query, ignoreCase = true) == true)
+            )
         }
     }
 
@@ -166,12 +179,22 @@ class SearchViewModel @Inject constructor(
         return try {
             val regex = Regex(pattern, RegexOption.IGNORE_CASE)
             allFiles.filter { file ->
-                regex.containsMatchIn(file.name) ||
-                regex.containsMatchIn(file.path) ||
-                (file.virtualLabel?.let(regex::containsMatchIn) == true)
+                matchesScope(file) && (
+                    regex.containsMatchIn(file.name) ||
+                    regex.containsMatchIn(file.path) ||
+                    (file.virtualLabel?.let(regex::containsMatchIn) == true)
+                )
             }
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    private fun matchesScope(file: FileNode): Boolean {
+        val scopePath = _uiState.value.scopePath?.takeIf { it.isNotBlank() } ?: return true
+        if (file.path == scopePath) return true
+
+        val normalizedScope = if (scopePath.endsWith('/')) scopePath else "$scopePath/"
+        return file.path.startsWith(normalizedScope)
     }
 }

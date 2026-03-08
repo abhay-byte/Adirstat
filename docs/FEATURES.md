@@ -55,7 +55,7 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 | F-018 | Sortable File List | Display flat list sorted by size (default: largest first) | ✅ Complete |
 | F-019 | Sort Options | Sort by: size, name, date modified, extension (ascending/descending) | 🟡 In Progress |
 | F-020 | Filter by Extension/Size/Date | Allow filtering by file extension, size range slider, date range | 🟡 In Progress |
-| F-021 | Wildcard & Regex Search | Search with wildcards (*.mp4) and regex toggle across scanned files plus virtual app-storage nodes | ✅ Complete |
+| F-021 | Wildcard & Regex Search | Search with wildcards (*.mp4) and regex toggle from treemap/file-list scan screens across the active scanned scope plus virtual app-storage nodes | ✅ Complete |
 | F-022 | File Type Grouping | Show file type breakdown with percentage bars | ✅ Complete |
 
 ---

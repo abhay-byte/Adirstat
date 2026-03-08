@@ -18,6 +18,9 @@ interface ScanCacheDao {
     
     @Query("SELECT * FROM scan_cache WHERE partitionPath = :path ORDER BY createdAt DESC LIMIT 1")
     suspend fun getLatestCacheForPartition(path: String): ScanCacheEntity?
+
+    @Query("SELECT * FROM scan_cache ORDER BY createdAt DESC LIMIT 1")
+    suspend fun getLatestCache(): ScanCacheEntity?
     
     @Query("SELECT * FROM scan_cache ORDER BY createdAt DESC")
     fun getAllCache(): Flow<List<ScanCacheEntity>>

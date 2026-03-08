@@ -25,8 +25,10 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
+    rootPath: String? = null,
+    scopePath: String? = null,
     onNavigateBack: () -> Unit,
-    onNavigateToDirectory: (String) -> Unit,
+    onNavigateToDirectory: (String, String?) -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -38,11 +40,15 @@ fun SearchScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshIndex()
+                viewModel.refreshIndex(rootPath, scopePath)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(rootPath, scopePath) {
+        viewModel.refreshIndex(rootPath, scopePath)
     }
     
     Scaffold(
@@ -164,7 +170,8 @@ fun SearchScreen(
                             Text(
                                 text = when {
                                     uiState.isLoading -> "Loading scan data..."
-                                    else -> "Search for files"
+                                    !uiState.hasIndexedFiles -> "No scanned data available"
+                                    else -> "Search this scan"
                                 },
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -172,7 +179,11 @@ fun SearchScreen(
                             if (!uiState.isLoading) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Use the home search action after scanning, or search here anytime.",
+                                    text = if (uiState.hasIndexedFiles) {
+                                        "Search is limited to the current scanned location."
+                                    } else {
+                                        "Run a storage scan first, then open search from a scan screen."
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -201,7 +212,7 @@ fun SearchScreen(
                                 file = file,
                                 onClick = {
                                     when (file) {
-                                        is FileNode.Directory -> onNavigateToDirectory(file.path)
+                                        is FileNode.Directory -> onNavigateToDirectory(file.path, uiState.activeRootPath)
                                         is FileNode.File -> {
                                             selectedNode = file
                                             showBottomSheet = true
@@ -224,7 +235,7 @@ fun SearchScreen(
                     onDismiss = { showBottomSheet = false },
                     onBrowse = { path ->
                         showBottomSheet = false
-                        onNavigateToDirectory(path)
+                        onNavigateToDirectory(path, uiState.activeRootPath)
                     },
                     onOpen = { path ->
                         FileActions.openFile(context, path)

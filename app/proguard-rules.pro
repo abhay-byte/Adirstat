@@ -5,8 +5,8 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# Keep Room entities
--keep class com.ivarna.adirstat.data.local.entity.** { *; }
+# Keep Room entities and DAOs
+-keep class com.ivarna.adirstat.data.local.db.** { *; }
 
 # Keep Hilt generated classes
 -keep class dagger.hilt.** { *; }
@@ -17,3 +17,7 @@
 -keepattributes Signature
 -keepattributes *Annotation*
 -keep class com.google.gson.** { *; }
+-keep class com.ivarna.adirstat.domain.model.FileNode { *; }
+-keep class com.ivarna.adirstat.domain.model.FileNode$File { *; }
+-keep class com.ivarna.adirstat.domain.model.FileNode$Directory { *; }
+-keep class com.ivarna.adirstat.domain.model.FileCategory { *; }

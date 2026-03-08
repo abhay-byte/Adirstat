@@ -29,8 +29,9 @@ import java.util.*
 @Composable
 fun FileListScreen(
     volumePath: String,
+    rootPath: String? = null,
     onNavigateBack: () -> Unit,
-    onNavigateToSearch: (() -> Unit)? = null,
+    onNavigateToSearch: ((String, String?) -> Unit)? = null,
     viewModel: FileListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -62,6 +63,17 @@ fun FileListScreen(
     fun onItemLongPress(file: FileNode) {
         selectedNode = file
         showBottomSheet = true
+    }
+
+    fun resolveSearchRootPath(): String {
+        rootPath?.takeIf { it.isNotBlank() }?.let { return it }
+
+        val currentPath = uiState.currentDirectory?.path ?: volumePath
+        return when {
+            currentPath.startsWith("virtual://") -> "/storage/emulated/0"
+            currentPath.startsWith("/storage/emulated/0") -> "/storage/emulated/0"
+            else -> volumePath
+        }
     }
     
     Scaffold(
@@ -101,7 +113,12 @@ fun FileListScreen(
                 },
                 actions = {
                     if (onNavigateToSearch != null) {
-                        IconButton(onClick = onNavigateToSearch) {
+                        IconButton(onClick = {
+                            onNavigateToSearch(
+                                resolveSearchRootPath(),
+                                uiState.currentDirectory?.path ?: volumePath
+                            )
+                        }) {
                             Icon(Icons.Default.Search, contentDescription = "Search")
                         }
                     }

@@ -80,7 +80,7 @@ This document provides detailed specifications for all 13 screens in Adirstat.
 **Purpose:** Main entry point showing all storage partitions with usage summary.
 
 ### Layout
-- **Top App Bar:** App logo only + Search icon + Settings icon
+- **Top App Bar:** Larger app logo only + Settings icon
 - **Content:** Scrollable list with a dedicated Internal Storage spotlight section followed by other partition cards
 - **Bottom Navigation:** Dashboard | Apps | History | Settings
 
@@ -116,7 +116,6 @@ If no partitions found (rare): "No storage volumes detected"
 ### Interactions
 - Tap scanned partition card → Open Treemap
 - Tap never-scanned partition card → No action; user must use FAB first
-- Tap search icon → Navigate to Search Screen
 - Tap settings → Navigate to Settings Screen
 - Tap Scan Storage FAB → Start scan
 
@@ -126,7 +125,6 @@ If no partitions found (rare): "No storage volumes detected"
 - Uses standard solid Material surfaces from the design system; no translucent/glass styling
 - If a scan exists, the whole spotlight opens the storage map
 - If no scan exists, the spotlight explains that the FAB must be used first
-- After a scan exists, it also exposes a direct "Search scanned files and apps" action from the home screen
 
 ---
 
@@ -437,14 +435,13 @@ The treemap root combines two sources:
 
 ## 12. Search Screen
 
-**Purpose:** Global search across all scanned files and virtual app-storage folders.
+**Purpose:** Search within the active scanned location from treemap and file-list screens, including virtual app-storage folders.
 
 ### Layout
 - **Search Bar:**
   - TextField with clear button
-  - Wildcard button (toggle)
-  - Regex button (toggle)
-- **Filter Chips:** Type, Size range, Date range
+  - Search icon when idle
+- **Filter Chips:** Regex, Wildcard
 - **Results:** Same as File List items, including read-only virtual app folders
 
 ### Search Syntax
@@ -464,6 +461,7 @@ The treemap root combines two sources:
 - Tap directory result → Open that directory in the File List screen
 - Tap file result → Bottom sheet with Open / Share / Show folder actions
 - Tap search → Keyboard appears, focus TextField
+- Search is opened from scan screens and scoped to the current scanned folder/app branch
 - Search data refreshes when the screen resumes so newly scanned content appears without restarting the app
 
 ---
@@ -500,7 +498,7 @@ The treemap root combines two sources:
 #### About
 | Setting | Type | Options |
 |---------|------|---------|
-| Version | Label | "1.0.0" |
+| Version | Label | "1.0.1" |
 | Open source licenses | Link | Show licenses |
 | Privacy policy | Link | Show policy |
 

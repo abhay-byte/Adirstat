@@ -38,7 +38,7 @@ import com.ivarna.adirstat.util.FileTypeColorMapper
 fun TreemapScreen(
     volumePath: String,
     onNavigateBack: () -> Unit,
-    onNavigateToSearch: () -> Unit,
+    onNavigateToSearch: (String, String?) -> Unit,
     onNavigateToFileList: (String) -> Unit,
     viewModel: TreemapViewModel = hiltViewModel()
 ) {
@@ -99,7 +99,12 @@ fun TreemapScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToSearch) {
+                    IconButton(onClick = {
+                        onNavigateToSearch(
+                            volumePath,
+                            navigationStack.lastOrNull()?.path ?: volumePath
+                        )
+                    }) {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     }
 

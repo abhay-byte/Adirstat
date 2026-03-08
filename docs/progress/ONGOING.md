@@ -12,6 +12,11 @@ No active round tasks. The storage visualization, list browsing, search, and vir
 
 ## Recently Completed (March 8, 2026)
 
+### Bug Fix Round 16 - Scoped Search + Release Shrink
+- Removed the dashboard home search entry points so search is only launched from scan screens
+- Scoped search to the active scanned path while keeping virtual app-storage results available inside internal storage scans
+- Enlarged the dashboard top bar logo and enabled release shrinking/resource trimming for a much smaller APK
+
 ### Bug Fix Round 15 - Launcher Icon Refresh
 - Replaced the default launcher artwork with the provided Downloads logo asset
 - Generated legacy `mipmap-*` launcher icons plus adaptive foreground artwork for Android 8+

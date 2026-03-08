@@ -39,7 +39,6 @@ import kotlin.math.abs
 @Composable
 fun DashboardScreen(
     onNavigateToTreemap: (String) -> Unit,
-    onNavigateToSearch: () -> Unit,
     onNavigateToSettings: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
@@ -81,7 +80,7 @@ fun DashboardScreen(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_launcher_foreground_image),
                         contentDescription = "Adirstat",
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(40.dp),
                         tint = Color.Unspecified
                     )
                 },
@@ -90,9 +89,6 @@ fun DashboardScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
-                    IconButton(onClick = onNavigateToSearch) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
-                    }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
@@ -155,8 +151,7 @@ fun DashboardScreen(
                 else -> {
                     StorageVolumesContent(
                         volumes = uiState.storageVolumes,
-                        onVolumeClick = onNavigateToTreemap,
-                        onSearchClick = onNavigateToSearch
+                        onVolumeClick = onNavigateToTreemap
                     )
                 }
             }
@@ -276,8 +271,7 @@ private fun ScanProgressContent(
 @Composable
 private fun StorageVolumesContent(
     volumes: List<DashboardViewModel.StorageVolumeInfo>,
-    onVolumeClick: (String) -> Unit,
-    onSearchClick: () -> Unit
+    onVolumeClick: (String) -> Unit
 ) {
     val primaryVolume = volumes.firstOrNull { it.path == "/storage/emulated/0" } ?: volumes.firstOrNull()
     val secondaryVolumes = volumes.filter { it != primaryVolume }
@@ -298,8 +292,7 @@ private fun StorageVolumesContent(
             item {
                 InternalStorageSpotlightCard(
                     volume = volume,
-                    onClick = { onVolumeClick(volume.path) },
-                    onSearchClick = onSearchClick
+                    onClick = { onVolumeClick(volume.path) }
                 )
             }
         }
@@ -352,8 +345,7 @@ private fun SectionHeader(
 @Composable
 private fun InternalStorageSpotlightCard(
     volume: DashboardViewModel.StorageVolumeInfo,
-    onClick: () -> Unit,
-    onSearchClick: () -> Unit
+    onClick: () -> Unit
 ) {
     val categories = volume.storageCategories ?: StorageCategories(
         appsBytes = 0L,
@@ -450,18 +442,6 @@ private fun InternalStorageSpotlightCard(
                     label = "Files",
                     value = FileSizeFormatter.format(categories.filesBytes)
                 )
-            }
-
-            if (!volume.neverScanned) {
-                OutlinedButton(
-                    onClick = onSearchClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Search scanned files and apps")
-                }
             }
 
             MultiSegmentStorageBar(categories = categories)

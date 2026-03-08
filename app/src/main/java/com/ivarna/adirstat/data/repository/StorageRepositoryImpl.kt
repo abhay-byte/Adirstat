@@ -150,9 +150,9 @@ class StorageRepositoryImpl @Inject constructor(
     
     override suspend fun getLastScanResult(): FileNode.Directory? = withContext(Dispatchers.IO) {
         try {
-            // Get the most recent scan from the cache
-            val defaultPath = "/storage/emulated/0"
-            getCachedScan(defaultPath)
+            scanCacheDao.getLatestCache()?.let {
+                gson.fromJson(it.serializedTreeJson, FileNode.Directory::class.java)
+            }
         } catch (e: Exception) {
             null
         }
@@ -160,10 +160,7 @@ class StorageRepositoryImpl @Inject constructor(
     
     override suspend fun getLastScanTimestamp(): Long = withContext(Dispatchers.IO) {
         try {
-            // Get timestamp from scan history or cache
-            val defaultPath = "/storage/emulated/0"
-            val cached = getCachedScan(defaultPath)
-            cached?.lastModified ?: 0L
+            scanCacheDao.getLatestCache()?.createdAt ?: 0L
         } catch (e: Exception) {
             0L
         }

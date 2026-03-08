@@ -106,6 +106,14 @@ class ScanStorageUseCase @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun getLastScanResult(): Result<FileNode.Directory?> {
+        return try {
+            Result.success(repository.getLastScanResult())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
 
 /**
