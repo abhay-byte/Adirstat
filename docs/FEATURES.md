@@ -40,10 +40,10 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin with grouped root density control and readable labels | ✅ Complete |
+| F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin with grouped root density control, fewer empty tiny blocks, and readable labels | ✅ Complete |
 | F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.), including distinct app-data styling | ✅ Complete |
 | F-015 | Tap to Drill Down | Navigate into folder when tapping its treemap block | ✅ Complete |
-| F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Storage > Downloads > Videos) with correct root hiding and back-jump behavior | ✅ Complete |
+| F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Storage > Downloads > Videos) with correct root hiding, proper icons for virtual app nodes, and back-jump behavior | ✅ Complete |
 | F-017 | Pinch-to-Zoom | Support pinch gestures to zoom treemap in/out | 🔴 Not Started |
 
 ---

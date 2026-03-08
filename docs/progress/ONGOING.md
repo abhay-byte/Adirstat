@@ -12,6 +12,15 @@ No active round tasks. The storage visualization, list browsing, search, and vir
 
 ## Recently Completed (March 8, 2026)
 
+### Bug Fix Round 15 - Launcher Icon Refresh
+- Replaced the default launcher artwork with the provided Downloads logo asset
+- Generated legacy `mipmap-*` launcher icons plus adaptive foreground artwork for Android 8+
+
+### Bug Fix Round 14 - Icon Cleanup + Tiny Node Grouping
+- Replaced emoji-based virtual app markers with proper icons in app bars and breadcrumbs
+- Kept long app-bar titles to a single line with ellipsis instead of overflow
+- Grouped tiny treemap nodes more aggressively so unreadable empty blocks are folded into `Others`
+
 ### Bug Fix Round 13 - Visible App Info Buttons
 - Added direct trailing settings buttons on virtual app rows in dedicated list mode and treemap list mode so App Info is discoverable without long-press
 

@@ -359,7 +359,7 @@ The app implements the **Squarified Treemap** algorithm (Ben Shneiderman, 2000) 
 - Nodes are always sorted by `sizeBytes` descending before layout
 - The layout engine minimizes the worst aspect ratio of each row before recursing into the remaining bounds
 - Root-level treemap rendering is capped to `MAX_ROOT_NODES = 20`; remaining nodes are folded into an `Others (N)` node
-- Any node whose estimated canvas area falls below roughly `36dp × 24dp` is grouped into an `Others` aggregate before drawing
+- Any node whose estimated canvas area falls below roughly `48dp × 32dp` is grouped into an `Others` aggregate before drawing
 
 ### 6.2 Treemap Rendering: Compose Canvas
 
@@ -434,7 +434,7 @@ The app handles permissions differently based on API level:
 
 Additional derived state flows:
 
-- `screenTitle`: `Storage` at root, folder name in real folders, `🔒 AppName` in virtual app nodes
+- `screenTitle`: `Storage` at root, folder name in real folders, app name in virtual app nodes; Compose app bars render a proper icon instead of emoji and keep the title to a single line with ellipsis
 - `displayTotalBytes`: root shows true partition `usedBytes`; nested levels show the current directory/app size
 - `displayItemCount`: number of raw children in the current level before visual grouping
 - `listNodes`: full raw children for list mode so the user can browse every app node even when the treemap canvas groups items into `Others`
@@ -554,6 +554,7 @@ The spotlight intentionally uses solid `surfaceVariant` / `surface` containers f
 - Node titles may wrap across up to 3 lines when the full title fits inside the block.
 - Size and percentage metadata are rendered only when the node title is also rendered in full.
 - If the full title cannot fit, the block is left unlabeled instead of being shortened.
+- Tiny nodes are grouped more aggressively into `Others` so the treemap does not waste space on empty unreadable blocks.
 
 ---
 

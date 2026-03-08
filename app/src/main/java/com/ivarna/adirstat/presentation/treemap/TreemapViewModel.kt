@@ -64,7 +64,7 @@ class TreemapViewModel @Inject constructor(
         .map { stack ->
             when {
                 stack.isEmpty() -> "Storage"
-                stack.last().isVirtual -> "🔒 ${stack.last().name}"
+                stack.last().isVirtual -> stack.last().name
                 else -> stack.last().name
             }
         }

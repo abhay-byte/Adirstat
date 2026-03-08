@@ -94,8 +94,8 @@ fun TreemapView(
     }
 }
 
-private const val MIN_BLOCK_WIDTH_DP = 36f
-private const val MIN_BLOCK_HEIGHT_DP = 24f
+private const val MIN_BLOCK_WIDTH_DP = 48f
+private const val MIN_BLOCK_HEIGHT_DP = 32f
 
 private fun groupSmallNodes(
     nodes: List<FileNode>,
@@ -133,7 +133,7 @@ private fun groupSmallNodes(
         size = othersBytes,
         lastModified = 0L,
         isVirtual = true,
-        virtualLabel = "🔒 Others (${tooSmall.size} apps)"
+        virtualLabel = "Others (${tooSmall.size} apps)"
     )
 
     return (visible + othersNode).sortedByDescending { it.sizeBytes }
@@ -300,7 +300,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeLabel(
     var y = rect.y + padding
 
     val baseName = node.virtualLabel ?: node.name
-    val displayName = if (node.isVirtual && !baseName.startsWith("🔒")) "🔒 $baseName" else baseName
+    val displayName = baseName
     val wrappedName = fitWrappedText(displayName, nameFontSizeSp, maxLines = 3, bold = true)
     var drewName = false
     if (wrappedName != null) {

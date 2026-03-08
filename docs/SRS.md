@@ -124,7 +124,7 @@ The app shall color treemap blocks by file type category:
 Tapping a treemap block representing a folder or virtual app-storage node shall navigate into that node, loading its children into the treemap.
 
 #### FR-TREE-04: Breadcrumb Navigation
-The app shall display a breadcrumb bar showing current path (e.g., "Home > Downloads > Videos"). Tapping any segment shall navigate directly to that level.
+The app shall display a breadcrumb bar showing current path (e.g., "Storage > Downloads > Videos"). Tapping any segment shall navigate directly to that level.
 
 #### FR-TREE-05: Pinch-to-Zoom
 The treemap shall support pinch-to-zoom gestures to zoom in/out of the current view.
@@ -134,6 +134,7 @@ Treemap labels shall obey the following readability rules:
 - Node titles may wrap across up to 3 lines when space allows
 - No treemap label may be ellipsized or partially truncated
 - Size and percentage metadata shall only render when the full node title also fits
+- Nodes too small to present useful content shall be grouped into `Others` instead of rendering as empty blocks
 
 ---
 

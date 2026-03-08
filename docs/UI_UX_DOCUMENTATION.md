@@ -168,6 +168,7 @@ If no partitions found (rare): "No storage volumes detected"
 - **Top App Bar:**
   - Back button
   - Dynamic title: `Storage` at root, folder/app name when drilled in
+  - Virtual app titles use a proper leading icon instead of emoji and always stay on one line with ellipsis
   - Actions: Search / Expand / Treemap / List / Open Full List / Refresh
 - **Main Area:** Full-screen treemap (Canvas)
 - **Bottom Sheet (long-press or file tap):** File/folder details + actions
@@ -192,6 +193,7 @@ If no partitions found (rare): "No storage volumes detected"
 ### Breadcrumb
 - Hidden at root level
 - Shows current depth: Storage > Download > Brotato
+- Virtual app breadcrumb items use a proper icon instead of emoji text prefixes
 - Tapping any segment navigates up to that level
 - Current segment is non-clickable
 
@@ -213,7 +215,7 @@ If no partitions found (rare): "No storage volumes detected"
 The treemap displays a second root-level layer of virtual app nodes sourced from `StorageStatsManager`:
 
 - One virtual node per app above 1 MB
-- Label format: `🔒 App Name (App Data)`
+- Label format: `App Name (App Data)`
 - Visual treatment: semi-transparent fill + diagonal stripe texture
 - Drill-down shows `APK`, `Data`, and `Cache`
 - Virtual nodes are read-only, but they now appear in list/search browsing as read-only folders with the same drill-down
@@ -232,7 +234,7 @@ The treemap root combines two sources:
 ### Treemap Density Rules
 - Root level shows at most **20 named nodes + 1 `Others` node**
 - Nodes below the readable threshold are grouped into `Others` before drawing
-- Individual visible blocks should remain large enough to show at least one readable text line
+- Individual visible blocks should remain large enough to show at least one readable text line; otherwise they are grouped away instead of rendering as empty blocks
 - Tapping `Others (N)` drills into the grouped children
 
 ---
@@ -244,6 +246,7 @@ The treemap root combines two sources:
 ### Layout
 - **Top Bar:**
   - Back button + Title "Files"
+  - Virtual app folders show a proper leading icon in the title area instead of emoji text prefixes, with single-line ellipsis for long names
   - Sort button (dropdown)
 - **Filter Chips:** Horizontal scroll row (All, Images, Videos, Audio, Documents, Apps, Other)
 - **Search Field:** Text field with wildcard/regex toggle

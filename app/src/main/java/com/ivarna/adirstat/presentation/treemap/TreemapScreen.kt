@@ -64,7 +64,28 @@ fun TreemapScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(screenTitle) },
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (navigationStack.lastOrNull()?.isVirtual == true) {
+                            Icon(
+                                imageVector = Icons.Default.Android,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(
+                            text = screenTitle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         if (!viewModel.navigateBack()) {
@@ -375,13 +396,28 @@ private fun BreadcrumbRow(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text(
-                text = if (dir.isVirtual) "🔒 ${dir.name}" else dir.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (index == stack.lastIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
-                fontWeight = if (index == stack.lastIndex) FontWeight.SemiBold else FontWeight.Normal,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = if (index < stack.lastIndex) Modifier.clickable { onBreadcrumbClick(index + 1) } else Modifier
-            )
+            ) {
+                if (dir.isVirtual) {
+                    Icon(
+                        imageVector = Icons.Default.Android,
+                        contentDescription = null,
+                        tint = if (index == stack.lastIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Text(
+                    text = dir.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (index == stack.lastIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+                    fontWeight = if (index == stack.lastIndex) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
