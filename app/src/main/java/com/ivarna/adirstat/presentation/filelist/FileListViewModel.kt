@@ -60,17 +60,17 @@ class FileListViewModel @Inject constructor(
     private var currentDirectory: FileNode.Directory? = null
     private var virtualRootNodes: List<FileNode.Directory> = emptyList()
 
-    fun loadFiles(volumePath: String) {
+    fun loadFiles(volumePath: String, rootPath: String? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val rootPath = when {
+                val resolvedRootPath = rootPath?.takeIf { it.isNotBlank() } ?: when {
                     volumePath.startsWith("virtual://") -> DEFAULT_ROOT_PATH
                     volumePath.startsWith(DEFAULT_ROOT_PATH) -> DEFAULT_ROOT_PATH
                     else -> volumePath
                 }
 
-                val result = scanStorageUseCase.getCachedScan(rootPath)
+                val result = scanStorageUseCase.getCachedScan(resolvedRootPath)
                 val rootNode = result.getOrNull()
                 if (rootNode != null) {
                     rootDirectory = rootNode
@@ -182,7 +182,7 @@ class FileListViewModel @Inject constructor(
             filtered = filtered.filter { file ->
                 when {
                     filters.contains(FilterOption.LARGE_FILES) && file.sizeBytes > 100 * 1024 * 1024 -> true
-                    filters.contains(FilterOption.APPS) && file.isVirtual -> true
+                    filters.contains(FilterOption.APPS) && file.isAppNode -> true
                     file is FileNode.File -> {
                         val ext = file.extension.lowercase()
                         when {

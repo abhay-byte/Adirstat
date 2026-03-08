@@ -97,16 +97,16 @@ This document contains all tasks to be completed for Adirstat.
 
 | Task ID | Description | Feature ID | Status |
 |---------|-------------|------------|--------|
-| TASK-044 | Export scan results to CSV | F-031 | 🔴 Not Started |
-| TASK-045 | Scan history with comparison | F-032 | 🔴 Not Started |
+| TASK-044 | Export scan results to CSV | F-031 | ✅ Complete |
+| TASK-045 | Scan history with comparison | F-032 | ✅ Complete |
 
 ### Settings & UX (F-033 to F-035)
 
 | Task ID | Description | Feature ID | Status |
 |---------|-------------|------------|--------|
-| TASK-046 | Theme selection (system/light/dark/dynamic) | F-033 | 🔴 Not Started |
-| TASK-047 | Scan exclusion list | F-034 | 🔴 Not Started |
-| TASK-048 | Minimum file size filter | F-035 | 🔴 Not Started |
+| TASK-046 | Theme selection (system/light/dark/dynamic) | F-033 | ✅ Complete |
+| TASK-047 | Scan exclusion list | F-034 | ✅ Complete |
+| TASK-048 | Minimum file size filter | F-035 | ✅ Complete |
 
 ---
 

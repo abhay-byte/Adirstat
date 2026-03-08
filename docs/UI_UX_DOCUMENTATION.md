@@ -82,6 +82,7 @@ This document provides detailed specifications for all 13 screens in Adirstat.
 ### Layout
 - **Top App Bar:** Larger app logo only + Settings icon
 - **Content:** Scrollable list with a dedicated Internal Storage spotlight section followed by other partition cards
+- **Loading State:** Centered summary loader that shows cached scan metadata first, then fills in app/media totals shortly after
 - **Bottom Navigation:** Dashboard | Apps | History | Settings
 
 ### Partition Card Components
@@ -133,27 +134,29 @@ If no partitions found (rare): "No storage volumes detected"
 **Purpose:** Full-screen progress display during storage scan.
 
 ### Layout
-- **Header:** "Scanning [Partition Name]"
+- **Header:** "Scanning storage…"
 - **Progress Section:**
-  - Circular progress indicator (large, 120dp)
-  - Percentage text in center
+  - Indeterminate loading message while the scan is still discovering files
+  - Linear progress bar and percentage once completion can be estimated
 - **Stats Section:**
   - "Files scanned: [count]"
+  - "Data scanned: [bytes]"
   - "Current folder: [path]" (truncated with ellipsis)
-  - "Time elapsed: [mm:ss]"
-- **Cancel Button:** Outlined button "Cancel"
+  - Persistent guidance telling the user to keep the app open for large scans
+- **Cancel Button:** `Cancel Scan` action that opens a leave-confirmation dialog
 
 ### States
 
 | State | Visual |
 |-------|--------|
-| Scanning | Animated circular progress, updating stats |
+| Preparing | Indeterminate indicator + waiting copy while the scan warms up |
+| Scanning | Updating path, file count, scanned bytes, and percentage when available |
 | Completed | Success icon, auto-navigate after 1s |
 | Error | Error icon, error message, "Retry" button |
 | Cancelled | "Scan cancelled" message, "Back" button |
 
 ### Interactions
-- Tap Cancel → Confirmation dialog → Cancel coroutine → Return to Dashboard
+- Tap Cancel → Confirmation dialog before leaving the active scan screen
 - Press system back during an active scan → Confirmation dialog before leaving the scan screen
 - Auto-navigate to Treemap on completion
 
@@ -168,10 +171,15 @@ If no partitions found (rare): "No storage volumes detected"
   - Back button
   - Dynamic title: `Storage` at root, folder/app name when drilled in
   - Virtual app titles use a proper leading icon instead of emoji and always stay on one line with ellipsis
-  - Actions: Search / Expand / Treemap / List / Open Full List / Refresh
+  - Actions: Search (treemap mode only) / Reset zoom / Treemap / List / Refresh
 - **Main Area:** Full-screen treemap (Canvas)
 - **Bottom Sheet (long-press or file tap):** File/folder details + actions
 - **Info Bar:** Shows true partition used bytes at root; current folder/app size when drilled in
+
+### Scan and Virtual Node Behavior
+- Root-level protected app-storage nodes keep Android styling and App Info shortcuts
+- Grouped `Others (N)` virtual folders are treated as grouped filesystem buckets, not app nodes
+- Search stays available from the scan screen in both treemap and list modes, scoped to the active scanned location
 
 ### Treemap Specifications
 - **Algorithm:** Squarified Treemap

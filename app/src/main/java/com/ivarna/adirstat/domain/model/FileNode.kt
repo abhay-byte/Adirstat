@@ -14,6 +14,12 @@ sealed class FileNode : Serializable {
     abstract val isVirtual: Boolean
     abstract val virtualLabel: String?
 
+    val isGroupedNode: Boolean
+        get() = path.startsWith("virtual://others")
+
+    val isAppNode: Boolean
+        get() = isVirtual && !isGroupedNode && path.startsWith("virtual://")
+
     open val size: Long
         get() = sizeBytes
 
@@ -52,7 +58,9 @@ sealed class FileNode : Serializable {
         override val lastModified: Long,
         override val isVirtual: Boolean = false,
         override val virtualLabel: String? = null,
-        val isRestricted: Boolean = false  // For Android/data, Android/obb etc.
+        val isRestricted: Boolean = false,  // For Android/data, Android/obb etc.
+        val cachedFileCount: Long? = null,
+        val cachedDirectoryCount: Long? = null
     ) : FileNode() {
         override val sizeBytes: Long
             get() = size
@@ -61,13 +69,13 @@ sealed class FileNode : Serializable {
          * Number of files (including files in subdirectories)
          */
         val fileCount: Long
-            get() = countFiles(this)
+            get() = cachedFileCount ?: countFiles(this)
         
         /**
          * Number of directories (including subdirectories)
          */
         val directoryCount: Long
-            get() = countDirectories(this)
+            get() = cachedDirectoryCount ?: countDirectories(this)
         
         /**
          * Get top N largest children

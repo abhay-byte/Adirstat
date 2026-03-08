@@ -7,6 +7,13 @@ import com.ivarna.adirstat.data.source.StorageVolume
 import com.ivarna.adirstat.domain.model.FileNode
 import kotlinx.coroutines.flow.Flow
 
+data class LastScanSummary(
+    val partitionPath: String,
+    val totalSize: Long,
+    val fileCount: Long,
+    val createdAt: Long
+)
+
 /**
  * Repository interface for storage scanning operations
  */
@@ -73,4 +80,19 @@ interface StorageRepository {
      * Returns 0 if no scan has been performed
      */
     suspend fun getLastScanTimestamp(): Long
+
+    /**
+     * Get lightweight metadata for the most recent scan without loading the full tree.
+     */
+    suspend fun getLastScanSummary(): LastScanSummary?
+
+    /**
+     * Get all cached scan summaries, newest first.
+     */
+    suspend fun getAllScanSummaries(): List<LastScanSummary>
+
+    /**
+     * Delete all cached scan results.
+     */
+    suspend fun clearAllScans()
 }

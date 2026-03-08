@@ -6,11 +6,25 @@ This document tracks tasks currently being worked on.
 
 ## Currently In Progress
 
-No active round tasks. The storage visualization, list browsing, search, and virtual app-storage fixes are complete and the remaining backlog has moved back to [progress/TODO.md](TODO.md).
+No active round tasks. Settings, export, history, and all v1.0.2 bug fixes are complete. Remaining backlog is in [progress/TODO.md](TODO.md).
 
 ---
 
 ## Recently Completed (March 8, 2026)
+
+### Bug Fix Round 21 / Release v1.0.2 — Settings + Stability
+- All Settings items are now fully implemented: Theme dialog, Minimum File Size dialog, Excluded Paths dialog (add/remove), Clear Scan Cache (with Snackbar confirmation), Scan History dialog (shows each cached scan with size, file count, and timestamp), Export to CSV (writes timestamped file to Downloads, success/error Snackbar)
+- TreemapViewModel: added idempotency guard so navigating to a scan page never triggers a second scan when one is already running or loaded
+- DashboardViewModel: replaced two-phase partial update (which caused a 0 B flash) with a single parallel async load + one final state update
+- SearchScreen: removed the ON_RESUME lifecycle observer that was triggering a full re-index every time the user returned to the search screen
+- StorageRepository: added `clearAllScans()` and `getAllScanSummaries()` to the interface and implementation
+- Version bumped to 1.0.2 (versionCode 3)
+
+### Bug Fix Round 20 - Scan UX + Performance Polish
+- Added richer scan-progress messaging with file-count and scanned-bytes feedback on dashboard and treemap scan flows
+- Switched dashboard refresh to use a lightweight last-scan summary before loading heavier storage breakdown data
+- Stopped grouped `Others` virtual folders from being styled or treated as app-storage nodes
+- Removed the duplicate search action from scan list mode so only one search control is shown there
 
 ### Bug Fix Round 19 - Scan Back Confirmation
 - Added confirmation dialogs before leaving active scan progress from dashboard and treemap screens

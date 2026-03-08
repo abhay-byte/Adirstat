@@ -47,7 +47,7 @@ object FileTypeColorMapper {
      * Get color for any file node (file or directory)
      */
     fun getColorForNode(node: FileNode): Color {
-        if (node.isVirtual) return APP_DATA_COLOR
+        if (node.isAppNode) return APP_DATA_COLOR
         return when (node) {
             is FileNode.File -> getColorForFile(node.extension)
             is FileNode.Directory -> {

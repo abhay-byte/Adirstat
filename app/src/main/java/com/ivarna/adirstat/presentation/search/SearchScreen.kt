@@ -13,9 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.ivarna.adirstat.domain.model.FileNode
 import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
@@ -35,18 +32,10 @@ fun SearchScreen(
     var selectedNode by remember { mutableStateOf<FileNode?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshIndex(rootPath, scopePath)
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
+    // Load the index once when the screen first opens (or when rootPath/scopePath changes).
+    // Do NOT refresh on every ON_RESUME – that causes a full re-scan every time the user
+    // comes back from a directory or file bottom-sheet.
     LaunchedEffect(rootPath, scopePath) {
         viewModel.refreshIndex(rootPath, scopePath)
     }

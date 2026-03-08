@@ -11,6 +11,8 @@ import com.ivarna.adirstat.domain.repository.StorageRepository
 import com.ivarna.adirstat.util.PermissionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +39,10 @@ class DashboardViewModel @Inject constructor(
         val permissionStatus: PermissionManager.PermissionStatus? = null,
         val isScanning: Boolean = false,
         val scanProgress: Float = 0f,
+        val scanStatusText: String = "",
+        val scannedFiles: Long = 0L,
+        val scannedBytes: Long = 0L,
+        val isRefreshingBreakdown: Boolean = false,
         val error: String? = null,
         // UI compatibility fields
         val permissionState: PermissionState = PermissionState(),
@@ -65,6 +71,7 @@ class DashboardViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+    private var dashboardLoadJob: Job? = null
 
     init {
         loadDashboardData()
@@ -75,104 +82,122 @@ class DashboardViewModel @Inject constructor(
      * This is the function that loads both file scan results AND StorageStatsManager data.
      */
     fun loadDashboardData() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+        dashboardLoadJob?.cancel()
+        dashboardLoadJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
             val permissions = permissionManager.checkAllPermissions()
-            _uiState.update { it.copy(permissionStatus = permissions) }
 
-            // Step 1: Load partition totals — NO permission needed
-            val totals = withContext(Dispatchers.IO) {
-                storageStatsDataSource.getPartitionTotals()
-            }
-            _uiState.update { it.copy(partitionTotals = totals) }
-
-            // Step 2: Load per-app stats — needs PACKAGE_USAGE_STATS
-            val appResult = withContext(Dispatchers.IO) {
-                storageStatsDataSource.getPerAppStorageStats()
+            // Load all data in parallel
+            val totalsDeferred = async(Dispatchers.IO) { storageStatsDataSource.getPartitionTotals() }
+            val scanSummaryDeferred = async(Dispatchers.IO) { storageRepository.getLastScanSummary() }
+            val appResultDeferred = async(Dispatchers.IO) { storageStatsDataSource.getPerAppStorageStats() }
+            val mediaTotalsDeferred = async(Dispatchers.IO) {
+                try { mediaStoreDataSource.getMediaTotals() }
+                catch (e: Exception) { MediaStoreDataSource.MediaTotals(0L, 0, 0L, 0, 0L, 0) }
             }
 
-            val mediaTotals = withContext(Dispatchers.IO) {
-                try {
-                    mediaStoreDataSource.getMediaTotals()
-                } catch (e: Exception) {
-                    MediaStoreDataSource.MediaTotals(0L, 0, 0L, 0, 0L, 0)
-                }
-            }
+            val totals = totalsDeferred.await()
+            val scanSummary = scanSummaryDeferred.await()
+            val appResult = appResultDeferred.await()
+            val mediaTotals = mediaTotalsDeferred.await()
 
-            // Step 3: Load last scan result from Room cache
-            val cachedScan = withContext(Dispatchers.IO) {
-                storageRepository.getLastScanResult()
-            }
-            val filesystemBytes = cachedScan?.size ?: 0L
-            val lastScanTime = storageRepository.getLastScanTimestamp()
-
-            // Step 4: Compute combined categories
             val categories = withContext(Dispatchers.IO) {
                 storageStatsDataSource.computeStorageCategories(
-                    filesystemBytes = filesystemBytes,
+                    filesystemBytes = scanSummary?.totalSize ?: 0L,
                     appStats = appResult.apps,
                     mediaTotals = mediaTotals
                 )
             }
 
-            _uiState.update { it.copy(
-                isLoading = false,
-                storageCategories = categories,
-                appStats = appResult.apps,
-                lastScanTime = lastScanTime,
-                neverScanned = cachedScan == null,
-                // UI compatibility
-                permissionState = PermissionState(
-                    hasManageExternalStorage = permissions.hasAllFilesAccess,
-                    hasUsageAccess = permissions.hasUsageStatsAccess
-                ),
-                // Create a single storage volume from the partition totals
-                storageVolumes = listOf(
-                    StorageVolumeInfo(
-                        path = "/storage/emulated/0",
-                        name = "Internal Storage",
-                        totalBytes = totals.totalBytes,
-                        usedBytes = totals.usedBytes,
-                        freeBytes = totals.freeBytes,
-                        lastScanTime = lastScanTime.takeIf { it > 0 },
-                        appsBytes = categories.appsBytes + categories.appDataBytes,
-                        mediaBytes = categories.mediaBytes,
-                        otherBytes = categories.filesBytes + categories.systemBytes,
-                        storageCategories = categories,
-                        neverScanned = cachedScan == null
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    partitionTotals = totals,
+                    storageCategories = categories,
+                    appStats = appResult.apps,
+                    lastScanTime = scanSummary?.createdAt,
+                    neverScanned = scanSummary == null,
+                    isRefreshingBreakdown = false,
+                    permissionStatus = permissions,
+                    permissionState = PermissionState(
+                        hasManageExternalStorage = permissions.hasAllFilesAccess,
+                        hasUsageAccess = permissions.hasUsageStatsAccess
+                    ),
+                    storageVolumes = listOf(
+                        StorageVolumeInfo(
+                            path = "/storage/emulated/0",
+                            name = "Internal Storage",
+                            totalBytes = totals.totalBytes,
+                            usedBytes = totals.usedBytes,
+                            freeBytes = totals.freeBytes,
+                            lastScanTime = scanSummary?.createdAt,
+                            appsBytes = categories.appsBytes + categories.appDataBytes,
+                            mediaBytes = categories.mediaBytes,
+                            otherBytes = categories.filesBytes + categories.systemBytes,
+                            storageCategories = categories,
+                            neverScanned = scanSummary == null
+                        )
                     )
                 )
-            )}
+            }
         }
     }
 
     fun startScan(path: String = "/storage/emulated/0") {
         viewModelScope.launch {
-            _uiState.update { it.copy(isScanning = true, scanProgress = 0f) }
+            _uiState.update {
+                it.copy(
+                    isScanning = true,
+                    scanProgress = 0f,
+                    scanStatusText = "Preparing scan…",
+                    scannedFiles = 0L,
+                    scannedBytes = 0L,
+                    error = null
+                )
+            }
             try {
                 storageRepository.scanVolume(
                     volumePath = path,
                     excludedPaths = emptyList(),
                     minFileSize = 0
                 ).collect { progress ->
-                    val percent = when (progress) {
-                        is com.ivarna.adirstat.data.source.ScanProgress.Scanning -> progress.progressPercent / 100f
+                    when (progress) {
+                        is com.ivarna.adirstat.data.source.ScanProgress.Counting -> {
+                            _uiState.update { it.copy(scanStatusText = "Preparing scan…") }
+                        }
+                        is com.ivarna.adirstat.data.source.ScanProgress.Scanning -> {
+                            _uiState.update {
+                                it.copy(
+                                    scanProgress = if (progress.totalFiles > 0L) {
+                                        progress.progressPercent / 100f
+                                    } else {
+                                        0f
+                                    },
+                                    scanStatusText = progress.currentPath,
+                                    scannedFiles = progress.filesScanned,
+                                    scannedBytes = progress.totalSize
+                                )
+                            }
+                        }
                         is com.ivarna.adirstat.data.source.ScanProgress.Complete -> {
-                            // Save scan result to cache - only if rootNode is a Directory
                             val directoryNode = progress.rootNode as? com.ivarna.adirstat.domain.model.FileNode.Directory
                             if (directoryNode != null) {
                                 storageRepository.saveScanResult(directoryNode, path)
                             }
-                            1f
+                            _uiState.update {
+                                it.copy(
+                                    scanProgress = 1f,
+                                    scanStatusText = "Scan complete",
+                                    scannedFiles = progress.totalFiles,
+                                    scannedBytes = progress.totalSize
+                                )
+                            }
                         }
-                        else -> 0f
+                        else -> Unit
                     }
-                    _uiState.update { it.copy(scanProgress = percent) }
                 }
-                // After scan completes, reload dashboard data to show updated numbers
                 loadDashboardData()
-                // Set the scanned path to trigger navigation
                 _uiState.update { it.copy(scannedVolumePath = path) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Scan failed: ${e.message}") }

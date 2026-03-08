@@ -49,8 +49,12 @@ fun DashboardScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var showLeaveScanDialog by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = uiState.isScanning) {
+    fun requestLeaveScanConfirmation() {
         showLeaveScanDialog = true
+    }
+
+    BackHandler(enabled = uiState.isScanning) {
+        requestLeaveScanConfirmation()
     }
     
     // Reload data on resume - critical for updating after permissions granted
@@ -115,7 +119,7 @@ fun DashboardScreen(
                 )
             } else if (uiState.isScanning) {
                 ExtendedFloatingActionButton(
-                    onClick = { /* TODO: Cancel scan */ },
+                    onClick = { requestLeaveScanConfirmation() },
                     icon = { Icon(Icons.Default.Close, contentDescription = null) },
                     text = { Text("Cancel Scan") },
                     containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -131,9 +135,27 @@ fun DashboardScreen(
         ) {
             when {
                 uiState.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(
+                            text = "Loading storage summary…",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Recent scan info loads first. Detailed app and media totals may appear shortly after.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
                 !uiState.permissionState.hasManageExternalStorage -> {
                     PermissionRequestContent(
@@ -151,8 +173,11 @@ fun DashboardScreen(
                 }
                 uiState.isScanning -> {
                     ScanProgressContent(
-                        progress = (uiState.scanProgress * 100).toInt().toString() + "%",
-                        onCancel = { }
+                        progress = uiState.scanProgress,
+                        status = uiState.scanStatusText,
+                        scannedFiles = uiState.scannedFiles,
+                        scannedBytes = uiState.scannedBytes,
+                        onCancel = { requestLeaveScanConfirmation() }
                     )
                 }
                 else -> {
@@ -186,7 +211,10 @@ fun DashboardScreen(
                 TextButton(
                     onClick = {
                         showLeaveScanDialog = false
-                        (context as? Activity)?.finish()
+                        val activity = context as? Activity
+                        if (activity?.moveTaskToBack(true) != true) {
+                            activity?.finish()
+                        }
                     }
                 ) {
                     Text("Leave")
@@ -259,7 +287,10 @@ private fun PermissionRequestContent(
 
 @Composable
 private fun ScanProgressContent(
-    progress: String,
+    progress: Float,
+    status: String,
+    scannedFiles: Long,
+    scannedBytes: Long,
     onCancel: () -> Unit
 ) {
     Column(
@@ -277,18 +308,57 @@ private fun ScanProgressContent(
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Scanning...",
+            text = "Scanning storage…",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         
         Spacer(modifier = Modifier.height(16.dp))
-        
+
+        if (progress > 0f) {
+            LinearProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "${(progress * 100).toInt()}% complete",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else {
+            Text(
+                text = "Working through your files. Progress becomes visible as items are discovered.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
-            text = progress,
+            text = if (status.isNotBlank()) status else "Preparing scan…",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "$scannedFiles files • ${FileSizeFormatter.format(scannedBytes)} scanned",
+            style = MaterialTheme.typography.labelLarge,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Large scans can take time on devices with thousands of files. Keep the app open and wait for completion.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         

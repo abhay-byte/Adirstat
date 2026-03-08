@@ -13,6 +13,7 @@ import com.ivarna.adirstat.data.source.StorageStatsDataSource
 import com.ivarna.adirstat.data.source.StorageVolume
 import com.ivarna.adirstat.data.source.StorageVolumeDataSource
 import com.ivarna.adirstat.domain.model.FileNode
+import com.ivarna.adirstat.domain.repository.LastScanSummary
 import com.ivarna.adirstat.domain.repository.StorageRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -164,5 +165,39 @@ class StorageRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             0L
         }
+    }
+
+    override suspend fun getLastScanSummary(): LastScanSummary? = withContext(Dispatchers.IO) {
+        try {
+            scanCacheDao.getLatestCache()?.let {
+                LastScanSummary(
+                    partitionPath = it.partitionPath,
+                    totalSize = it.totalSize,
+                    fileCount = it.fileCount,
+                    createdAt = it.createdAt
+                )
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override suspend fun getAllScanSummaries(): List<LastScanSummary> = withContext(Dispatchers.IO) {
+        try {
+            scanCacheDao.getAllCacheList().map {
+                LastScanSummary(
+                    partitionPath = it.partitionPath,
+                    totalSize = it.totalSize,
+                    fileCount = it.fileCount,
+                    createdAt = it.createdAt
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    override suspend fun clearAllScans(): Unit = withContext(Dispatchers.IO) {
+        try { scanCacheDao.deleteAllCache() } catch (e: Exception) { /* ignore */ }
     }
 }

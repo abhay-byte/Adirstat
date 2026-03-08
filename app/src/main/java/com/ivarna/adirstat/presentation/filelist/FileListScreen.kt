@@ -42,8 +42,8 @@ fun FileListScreen(
     var showBottomSheet by remember { mutableStateOf(false) }
     val isSelectionMode = selectedPaths.isNotEmpty()
     
-    LaunchedEffect(volumePath) {
-        viewModel.loadFiles(volumePath)
+    LaunchedEffect(volumePath, rootPath) {
+        viewModel.loadFiles(volumePath, rootPath)
     }
 
     LaunchedEffect(uiState.files) {
@@ -100,7 +100,7 @@ fun FileListScreen(
             else -> volumePath
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -113,7 +113,7 @@ fun FileListScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (uiState.currentDirectory?.isVirtual == true) {
+                            if (uiState.currentDirectory?.isAppNode == true) {
                                 Icon(
                                     imageVector = Icons.Default.Android,
                                     contentDescription = null,
@@ -159,14 +159,14 @@ fun FileListScreen(
                         }
                     } else {
                         if (onNavigateToSearch != null) {
-                        IconButton(onClick = {
-                            onNavigateToSearch(
-                                resolveSearchRootPath(),
-                                uiState.currentDirectory?.path ?: volumePath
-                            )
-                        }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        }
+                            IconButton(onClick = {
+                                onNavigateToSearch(
+                                    resolveSearchRootPath(),
+                                    uiState.currentDirectory?.path ?: volumePath
+                                )
+                            }) {
+                                Icon(Icons.Default.Search, contentDescription = "Search")
+                            }
                         }
                         var showSortMenu by remember { mutableStateOf(false) }
                         IconButton(onClick = { showSortMenu = true }) {
@@ -220,25 +220,6 @@ fun FileListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Search bar
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search files...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear")
-                        }
-                    }
-                },
-                singleLine = true
-            )
-            
             // Filter chips
             Row(
                 modifier = Modifier
@@ -370,12 +351,12 @@ private fun FileListItem(
             Icon(
                 imageVector = when (file) {
                     is FileNode.File -> getFileIcon(file.extension)
-                    is FileNode.Directory -> if (file.isVirtual) Icons.Default.Android else Icons.Default.Folder
+                    is FileNode.Directory -> if (file.isAppNode) Icons.Default.Android else Icons.Default.Folder
                 },
                 contentDescription = null,
                 tint = when (file) {
                     is FileNode.File -> getFileColor(file.extension)
-                    is FileNode.Directory -> if (file.isVirtual) androidx.compose.ui.graphics.Color(0xFF3F51B5) else androidx.compose.ui.graphics.Color(0xFF5C7A99)
+                    is FileNode.Directory -> if (file.isAppNode) androidx.compose.ui.graphics.Color(0xFF3F51B5) else androidx.compose.ui.graphics.Color(0xFF5C7A99)
                 },
                 modifier = Modifier.size(40.dp)
             )
@@ -393,7 +374,7 @@ private fun FileListItem(
                 when {
                     file.isVirtual -> {
                         Text(
-                            text = file.virtualLabel ?: "Protected app storage",
+                            text = file.virtualLabel ?: file.path,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1
@@ -432,7 +413,7 @@ private fun FileListItem(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else if (!isSelectionMode && file.isVirtual && onAppDetailsClick != null) {
+                } else if (!isSelectionMode && file.isAppNode && onAppDetailsClick != null) {
                     FilledTonalIconButton(
                         onClick = onAppDetailsClick,
                         modifier = Modifier.size(32.dp)
@@ -501,12 +482,12 @@ private fun FileDetailBottomSheet(
             Icon(
                 imageVector = when (file) {
                     is FileNode.File -> getFileIcon(file.extension)
-                    is FileNode.Directory -> if (file.isVirtual) Icons.Default.Android else Icons.Default.Folder
+                    is FileNode.Directory -> if (file.isAppNode) Icons.Default.Android else Icons.Default.Folder
                 },
                 contentDescription = null,
                 tint = when (file) {
                     is FileNode.File -> getFileColor(file.extension)
-                    is FileNode.Directory -> if (file.isVirtual) androidx.compose.ui.graphics.Color(0xFF3F51B5) else androidx.compose.ui.graphics.Color(0xFF5C7A99)
+                    is FileNode.Directory -> if (file.isAppNode) androidx.compose.ui.graphics.Color(0xFF3F51B5) else androidx.compose.ui.graphics.Color(0xFF5C7A99)
                 },
                 modifier = Modifier.size(48.dp)
             )
@@ -547,16 +528,24 @@ private fun FileDetailBottomSheet(
         
         // Action buttons
         if (file.isVirtual) {
-            val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
-            AppDetailsShortcutCard(
-                summary = "Protected app-storage summary. You can drill into this item from the list, but it remains read-only.",
-                onOpenAppDetails = packageName?.let {
-                    {
-                        FileActions.openAppInfo(context, it)
-                        onDismiss()
+            if (file.isAppNode) {
+                val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
+                AppDetailsShortcutCard(
+                    summary = "Protected app-storage summary. You can drill into this item from the list, but it remains read-only.",
+                    onOpenAppDetails = packageName?.let {
+                        {
+                            FileActions.openAppInfo(context, it)
+                            onDismiss()
+                        }
                     }
-                }
-            )
+                )
+            } else {
+                Text(
+                    text = "This is a grouped virtual item used to keep tiny nodes readable. Open it from the list or treemap, but it cannot be opened, shared, or deleted directly.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),

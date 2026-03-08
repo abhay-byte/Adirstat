@@ -1,17 +1,13 @@
 package com.ivarna.adirstat.data.source
 
 import android.util.Log
-import android.os.Environment
 import com.ivarna.adirstat.domain.model.FileNode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -40,10 +36,9 @@ class FileSystemDataSource @Inject constructor() {
         minFileSize: Long = MIN_FILE_SIZE,
         scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
     ): Flow<ScanProgress> = callbackFlow {
-        var totalFiles = 0L
         var scannedFiles = 0L
         var totalSize = 0L
-        var currentPath = rootPath
+        var lastReportedPath = rootPath
 
         val rootFile = File(rootPath)
         if (!rootFile.exists() || !rootFile.canRead()) {
@@ -52,47 +47,44 @@ class FileSystemDataSource @Inject constructor() {
             return@callbackFlow
         }
 
-        // First, count total files for progress calculation
         trySend(ScanProgress.Counting(rootPath))
-        
-        launch(Dispatchers.IO) {
-            try {
-                totalFiles = countFiles(rootFile, excludedPaths)
-                trySend(ScanProgress.CountingComplete(totalFiles))
-            } catch (e: Exception) {
-                // Continue with scan even if counting fails
-                trySend(ScanProgress.CountingComplete(0))
-            }
-        }
+        trySend(ScanProgress.CountingComplete(0))
 
-        // Build the file tree
         val rootNode = withContext(Dispatchers.IO) {
             scanRecursive(
                 file = rootFile,
                 excludedPaths = excludedPaths,
                 minFileSize = minFileSize,
-                onProgress = { path, fileCount, size ->
-                    scannedFiles = fileCount
-                    currentPath = path
-                    totalSize = size
-                    
-                    if (scannedFiles % BATCH_SIZE == 0L || scannedFiles == totalFiles) {
-                        val progress = if (totalFiles > 0) {
-                            (scannedFiles.toFloat() / totalFiles * 100).toInt()
-                        } else 0
-                        
+                onProgress = { path, fileCountDelta, sizeDelta ->
+                    scannedFiles += fileCountDelta
+                    totalSize += sizeDelta
+                    lastReportedPath = path
+
+                    if (scannedFiles == 1L || scannedFiles % BATCH_SIZE == 0L) {
                         trySend(
                             ScanProgress.Scanning(
                                 currentPath = path,
                                 filesScanned = scannedFiles,
-                                totalFiles = totalFiles,
+                                totalFiles = 0L,
                                 totalSize = totalSize,
-                                progressPercent = progress
+                                progressPercent = 0
                             )
                         )
                     }
                 },
                 scope = scope
+            )
+        }
+
+        if (scannedFiles > 0L) {
+            trySend(
+                ScanProgress.Scanning(
+                    currentPath = lastReportedPath,
+                    filesScanned = scannedFiles,
+                    totalFiles = scannedFiles,
+                    totalSize = totalSize,
+                    progressPercent = 100
+                )
             )
         }
 
@@ -117,22 +109,6 @@ class FileSystemDataSource @Inject constructor() {
     }
 
     /**
-     * Count total files in directory (for progress calculation)
-     */
-    private fun countFiles(file: File, excludedPaths: List<String>): Long {
-        if (!file.canRead() || isExcluded(file.absolutePath, excludedPaths)) {
-            return 0
-        }
-
-        if (file.isFile) {
-            return 1
-        }
-
-        val children = file.listFiles() ?: return 0
-        return children.sumOf { countFiles(it, excludedPaths) }
-    }
-
-    /**
      * Recursively scan directory and build FileNode tree
      */
     private suspend fun scanRecursive(
@@ -151,7 +127,9 @@ class FileSystemDataSource @Inject constructor() {
                 path = file.absolutePath,
                 children = emptyList(),
                 size = 0,
-                lastModified = file.lastModified()
+                lastModified = file.lastModified(),
+                cachedFileCount = 0,
+                cachedDirectoryCount = 1
             )
         }
 
@@ -172,6 +150,7 @@ class FileSystemDataSource @Inject constructor() {
         // Directory - scan children
         val children = mutableListOf<FileNode>()
         val childFiles = file.listFiles() ?: emptyArray()
+        var directoryCount = 1L
 
         for (childFile in childFiles) {
             if (!scope.isActive) break
@@ -195,6 +174,7 @@ class FileSystemDataSource @Inject constructor() {
                 }
                 is FileNode.Directory -> {
                     fileCount += childNode.fileCount
+                    directoryCount += childNode.directoryCount
                     totalSize += childNode.size
                 }
             }
@@ -208,7 +188,9 @@ class FileSystemDataSource @Inject constructor() {
             path = file.absolutePath,
             children = sortedChildren,
             size = totalSize,
-            lastModified = file.lastModified()
+            lastModified = file.lastModified(),
+            cachedFileCount = fileCount,
+            cachedDirectoryCount = directoryCount
         )
     }
 

@@ -28,7 +28,7 @@ object FileActions {
     }
 
     fun getPackageNameFromVirtualPath(path: String): String? {
-        if (!path.startsWith("virtual://")) return null
+        if (!path.startsWith("virtual://") || path.startsWith("virtual://others")) return null
         val suffix = path.removePrefix("virtual://")
         return suffix.substringBefore('/').takeIf { it.isNotBlank() }
     }

@@ -8,6 +8,12 @@ This document tracks all completed tasks for Adirstat.
 
 | Task ID | Description | Completed Date | Notes |
 |---------|-------------|----------------|-------|
+| TASK-044 | Export scan results to CSV | 2026-03-08 | Writes timestamped CSV to Downloads; snackbar on success/failure |
+| TASK-045 | Scan history via Settings | 2026-03-08 | Dialog shows all cached scan entries (partition, size, file count, date) |
+| TASK-046 | Theme selection (system/light/dark/dynamic) | 2026-03-08 | Radio-button dialog persisted to DataStore |
+| TASK-047 | Scan exclusion list | 2026-03-08 | Add/remove paths dialog in Settings, persisted to DataStore |
+| TASK-048 | Minimum file size filter | 2026-03-08 | Radio-button dialog (All/1KB/10KB/1MB/10MB/100MB), persisted to DataStore |
+| ROUND-21 | Settings fully implemented + v1.0.2 bug-fix release | 2026-03-08 | All settings dialogs, real cache clear, CSV export, scan history, double-scan guard, dashboard 0b flash fix, search rescan fix |
 | TASK-000 | Project documentation initialized | 2026-03-07 | Created all documentation files in /docs folder |
 | TASK-001 | Project scaffold (Hilt, Room, Compose, Navigation, DataStore setup) | 2026-03-07 | Android project with SDK 35/36, AGP 8.13.2, Kotlin 1.9.22, Hilt 2.50 |
 | TASK-012 | Fastlane setup + all lanes | 2026-03-07 | Created Appfile, Fastfile, Pluginfile, metadata, README |
@@ -15,6 +21,7 @@ This document tracks all completed tasks for Adirstat.
 | TASK-031 | Sortable file list | 2026-03-08 | Dedicated list browsing supports direct drill-in and sorting |
 | TASK-034 | Wildcard and regex search | 2026-03-08 | Search covers cached scan nodes and virtual app-storage nodes |
 | TASK-039 | Expose virtual app-storage entries with sizes and APK/Data/Cache drill-down | 2026-03-08 | Root treemap/list/search now include protected app-storage nodes |
+| ROUND-20 | Scan UX, performance, and virtual-node polish | 2026-03-08 | Reduced dashboard post-scan load cost with lightweight scan summaries, added richer scan progress details, stopped grouped `Others` nodes from being styled as apps, and removed the duplicate search action from scan list mode |
 | ROUND-19 | Scan back confirmation | 2026-03-08 | Added confirmation dialogs before leaving active scan progress from dashboard and treemap screens |
 | ROUND-18 | List multi-select | 2026-03-08 | Added multi-select mode and top-bar select-all actions to dedicated file list and treemap list view |
 | ROUND-17 | Release docs polish | 2026-03-08 | Added a mandatory major-change release checklist to the docs index and fixed release notes to use a GitHub-hosted icon |
@@ -60,4 +67,5 @@ When a task is completed:
 - TASK-012 is complete
 - TASK-CRASH is complete
 - Round 7 through Round 11 fixes are complete and documented
+- Round 20 scan UX/performance polish is complete and documented
 - This file will grow as more features are implemented

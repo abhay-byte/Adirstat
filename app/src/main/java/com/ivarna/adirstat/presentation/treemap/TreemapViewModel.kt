@@ -27,6 +27,9 @@ data class TreemapUiState(
     val isLoading: Boolean = true,
     val isScanning: Boolean = false,
     val scanProgress: String = "",
+    val scannedFiles: Long = 0L,
+    val scannedBytes: Long = 0L,
+    val scanProgressPercent: Float = 0f,
     val selectedFile: FileNode? = null,
     val error: String? = null,
     val zoomScale: Float = 1f,
@@ -96,6 +99,10 @@ class TreemapViewModel @Inject constructor(
     }
 
     fun loadTreemap(volumePath: String) {
+        // Prevent double-load: if already scanning this volume or already have data loaded, skip
+        if (currentVolumePath == volumePath && (_uiState.value.isScanning || realRootNode != null)) {
+            return
+        }
         currentVolumePath = volumePath
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -125,15 +132,36 @@ class TreemapViewModel @Inject constructor(
     
     private fun startScan(volumePath: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = false, isScanning = true, scanProgress = "Starting scan...") }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    isScanning = true,
+                    scanProgress = "Preparing scan…",
+                    scannedFiles = 0L,
+                    scannedBytes = 0L,
+                    scanProgressPercent = 0f
+                )
+            }
             try {
                 scanStorageUseCase.scanVolume(volumePath).collect { result ->
                     result.fold(
                         onSuccess = { state ->
                             when (state) {
+                                is com.ivarna.adirstat.domain.usecase.ScanState.Counting -> {
+                                    _uiState.update { it.copy(scanProgress = "Preparing scan…") }
+                                }
                                 is com.ivarna.adirstat.domain.usecase.ScanState.Scanning -> {
-                                    _uiState.update { 
-                                        it.copy(scanProgress = state.currentPath) 
+                                    _uiState.update {
+                                        it.copy(
+                                            scanProgress = state.currentPath,
+                                            scannedFiles = state.filesScanned,
+                                            scannedBytes = state.totalSize,
+                                            scanProgressPercent = if (state.totalFiles > 0L) {
+                                                state.progressPercent / 100f
+                                            } else {
+                                                0f
+                                            }
+                                        )
                                     }
                                 }
                                 is com.ivarna.adirstat.domain.usecase.ScanState.Complete -> {
@@ -143,7 +171,10 @@ class TreemapViewModel @Inject constructor(
                                     _uiState.update { 
                                         it.copy(
                                             isScanning = false, 
-                                            scanProgress = ""
+                                            scanProgress = "",
+                                            scannedFiles = state.totalFiles,
+                                            scannedBytes = state.totalSize,
+                                            scanProgressPercent = 1f
                                         )
                                     }
                                     buildAndDisplayRoot(state.rootNode)
@@ -155,6 +186,7 @@ class TreemapViewModel @Inject constructor(
                             _uiState.update { 
                                 it.copy(
                                     isScanning = false, 
+                                    scanProgressPercent = 0f,
                                     error = e.message
                                 ) 
                             }
@@ -165,6 +197,7 @@ class TreemapViewModel @Inject constructor(
                 _uiState.update { 
                     it.copy(
                         isScanning = false, 
+                        scanProgressPercent = 0f,
                         error = e.message
                     ) 
                 }
@@ -273,9 +306,16 @@ class TreemapViewModel @Inject constructor(
     }
 
     fun refresh() {
-        if (currentVolumePath.isNotEmpty()) {
-            loadTreemap(currentVolumePath)
-        }
+        val path = currentVolumePath.ifBlank { "/storage/emulated/0" }
+        realRootNode = null // clear guard so loadTreemap actually re-loads
+        currentVolumePath = ""
+        loadTreemap(path)
+    }
+
+    fun forceRefresh(volumePath: String) {
+        realRootNode = null
+        currentVolumePath = ""
+        loadTreemap(volumePath)
     }
 
     fun canNavigateBack(): Boolean = _navigationStack.value.isNotEmpty()

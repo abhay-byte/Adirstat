@@ -133,7 +133,7 @@ private fun groupSmallNodes(
         size = othersBytes,
         lastModified = 0L,
         isVirtual = true,
-        virtualLabel = "Others (${tooSmall.size} apps)"
+        virtualLabel = "Others (${tooSmall.size} items)"
     )
 
     return (visible + othersNode).sortedByDescending { it.sizeBytes }
@@ -164,7 +164,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawTreemapBlock(
     val blockWidth = rect.width
     val blockHeight = rect.height
 
-    if (node.isVirtual) {
+    if (node.isAppNode) {
         drawRect(
             color = blockColor.copy(alpha = 0.75f),
             topLeft = Offset(rect.x, rect.y),

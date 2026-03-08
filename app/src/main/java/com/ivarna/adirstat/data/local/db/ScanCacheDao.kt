@@ -24,6 +24,9 @@ interface ScanCacheDao {
     
     @Query("SELECT * FROM scan_cache ORDER BY createdAt DESC")
     fun getAllCache(): Flow<List<ScanCacheEntity>>
+
+    @Query("SELECT * FROM scan_cache ORDER BY createdAt DESC")
+    suspend fun getAllCacheList(): List<ScanCacheEntity>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCache(cache: ScanCacheEntity): Long

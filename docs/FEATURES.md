@@ -28,7 +28,7 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 |----|---------|-------------|--------|
 | F-006 | Recursive File Traversal | Use File API to recursively scan directories and calculate sizes | ✅ Complete |
 | F-007 | MediaStore Fallback | Query MediaStore ContentProvider when MANAGE_EXTERNAL_STORAGE not granted | ✅ Complete |
-| F-008 | Real-time Progress | Emit scan progress via Flow (files scanned, current path, %) | ✅ Complete |
+| F-008 | Real-time Progress | Emit scan progress via Flow (files scanned, bytes scanned, current path, and completion state when available) | ✅ Complete |
 | F-009 | Cancellable Scan | Allow user to cancel ongoing scan via coroutine cancellation | ✅ Complete |
 | F-010 | Background Scan (WorkManager) | Schedule periodic scans via WorkManager | 🔴 Not Started |
 | F-011 | Scan Result Caching | Cache scan results in Room database | ✅ Complete |
@@ -41,7 +41,7 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
 | F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin with grouped root density control, fewer empty tiny blocks, and readable labels | ✅ Complete |
-| F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.), including distinct app-data styling | ✅ Complete |
+| F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.), including distinct app-data styling without mislabeling grouped `Others` nodes as apps | ✅ Complete |
 | F-015 | Tap to Drill Down | Navigate into folder when tapping its treemap block | ✅ Complete |
 | F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Storage > Downloads > Videos) with correct root hiding, proper icons for virtual app nodes, and back-jump behavior | ✅ Complete |
 | F-017 | Pinch-to-Zoom | Support pinch gestures to zoom treemap in/out | 🔴 Not Started |
@@ -96,8 +96,8 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-031 | Export to CSV | Export scan results via ShareSheet | 🔴 Not Started |
-| F-032 | Scan History | View past scans with storage change comparison | 🔴 Not Started |
+| F-031 | Export to CSV | Export scan results via ShareSheet | ✅ Implemented |
+| F-032 | Scan History | View past scans with storage change comparison | ✅ Implemented |
 
 ---
 
@@ -105,9 +105,9 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-033 | Theme Selection | System/Light/Dark/Dynamic Color (Android 12+) | 🔴 Not Started |
-| F-034 | Exclusion List | Add paths to exclude from scanning | 🔴 Not Started |
-| F-035 | Minimum File Size Filter | Set minimum file size for treemap/list display | 🔴 Not Started |
+| F-033 | Theme Selection | System/Light/Dark/Dynamic Color (Android 12+) | ✅ Implemented |
+| F-034 | Exclusion List | Add paths to exclude from scanning | ✅ Implemented |
+| F-035 | Minimum File Size Filter | Set minimum file size for treemap/list display | ✅ Implemented |
 
 ---
 
@@ -122,8 +122,8 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 | Duplicate Detection | F-023, F-024, F-025 | 3 🔴 |
 | App Storage | F-026, F-027, F-036, F-037 | 4 ✅/🔴 mixed |
 | File Actions | F-028, F-029, F-030 | 3 🔴 |
-| Export & History | F-031, F-032 | 2 🔴 |
-| Settings & UX | F-033, F-034, F-035 | 3 🔴 |
+| Export & History | F-031, F-032 | 2 ✅ |
+| Settings & UX | F-033, F-034, F-035 | 3 ✅ |
 
 **Total: 37 features**
 

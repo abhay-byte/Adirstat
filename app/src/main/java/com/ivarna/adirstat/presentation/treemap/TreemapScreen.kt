@@ -55,6 +55,16 @@ fun TreemapScreen(
     var showLeaveScanDialog by remember { mutableStateOf(false) }
     val selectedListPaths = remember { mutableStateListOf<String>() }
     val isListSelectionMode = showListView && selectedListPaths.isNotEmpty()
+    val shouldConfirmLeaveScan = uiState.isScanning || (uiState.isLoading && currentNodes.isEmpty() && uiState.error == null)
+
+    fun handleBackNavigation() {
+        when {
+            shouldConfirmLeaveScan -> showLeaveScanDialog = true
+            isListSelectionMode -> selectedListPaths.clear()
+            viewModel.navigateBack() -> Unit
+            else -> onNavigateBack()
+        }
+    }
 
     LaunchedEffect(volumePath) {
         viewModel.loadTreemap(volumePath)
@@ -66,16 +76,8 @@ fun TreemapScreen(
         if (!showListView) selectedListPaths.clear()
     }
 
-    BackHandler(enabled = uiState.isScanning || isListSelectionMode || viewModel.canNavigateBack()) {
-        if (uiState.isScanning) {
-            showLeaveScanDialog = true
-            return@BackHandler
-        }
-        if (isListSelectionMode) {
-            selectedListPaths.clear()
-            return@BackHandler
-        }
-        viewModel.navigateBack()
+    BackHandler(enabled = shouldConfirmLeaveScan || isListSelectionMode || viewModel.canNavigateBack()) {
+        handleBackNavigation()
     }
 
     fun toggleListSelection(node: FileNode) {
@@ -94,7 +96,7 @@ fun TreemapScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (navigationStack.lastOrNull()?.isVirtual == true) {
+                        if (navigationStack.lastOrNull()?.isAppNode == true) {
                             Icon(
                                 imageVector = Icons.Default.Android,
                                 contentDescription = null,
@@ -112,15 +114,7 @@ fun TreemapScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (uiState.isScanning) {
-                            showLeaveScanDialog = true
-                            return@IconButton
-                        }
-                        if (!viewModel.navigateBack()) {
-                            onNavigateBack()
-                        }
-                    }) {
+                    IconButton(onClick = { handleBackNavigation() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back"
@@ -174,14 +168,6 @@ fun TreemapScreen(
                                 contentDescription = "List",
                                 tint = if (showListView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                onNavigateToFileList(navigationStack.lastOrNull()?.path ?: volumePath)
-                            }
-                        ) {
-                            Icon(Icons.Default.FolderOpen, contentDescription = "Open full list")
                         }
 
                         IconButton(onClick = { viewModel.refresh() }) {
@@ -266,6 +252,30 @@ fun TreemapScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            if (uiState.scanProgressPercent > 0f) {
+                                LinearProgressIndicator(
+                                    progress = { uiState.scanProgressPercent.coerceIn(0f, 1f) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "${(uiState.scanProgressPercent * 100).toInt()}% complete",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "${uiState.scannedFiles} files • ${FileSizeFormatter.format(uiState.scannedBytes)} scanned",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Large scans can take time on devices with many files. Keep this screen open until the treemap appears.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -423,7 +433,7 @@ fun TreemapScreen(
                 onDismissRequest = { showLeaveScanDialog = false },
                 title = { Text("Leave scan?") },
                 text = {
-                    Text("The storage scan is still running. Leaving now may discard progress and return you to the previous screen.")
+                    Text("The storage scan is still preparing or running. Leaving now may discard progress and return you to the previous screen.")
                 },
                 confirmButton = {
                     TextButton(
@@ -479,7 +489,7 @@ private fun BreadcrumbRow(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = if (index < stack.lastIndex) Modifier.clickable { onBreadcrumbClick(index + 1) } else Modifier
             ) {
-                if (dir.isVirtual) {
+                if (dir.isAppNode) {
                     Icon(
                         imageVector = Icons.Default.Android,
                         contentDescription = null,
@@ -559,13 +569,13 @@ private fun FileListView(
                         }
                         Icon(
                             imageVector = when {
-                                item is FileNode.Directory && item.isVirtual -> Icons.Default.Android
+                                item is FileNode.Directory && item.isAppNode -> Icons.Default.Android
                                 item is FileNode.Directory -> Icons.Default.Folder
                                 else -> Icons.Default.InsertDriveFile
                             },
                             contentDescription = null,
                             tint = when {
-                                item is FileNode.Directory && item.isVirtual -> FileTypeColorMapper.APP_DATA_COLOR
+                                item is FileNode.Directory && item.isAppNode -> FileTypeColorMapper.APP_DATA_COLOR
                                 item is FileNode.Directory -> Color(0xFF5C7A99)
                                 else -> MaterialTheme.colorScheme.primary
                             }
@@ -575,7 +585,7 @@ private fun FileListView(
                 overlineContent = {
                     if (item.isVirtual) {
                         Text(
-                            text = item.virtualLabel ?: "Protected app storage",
+                            text = item.virtualLabel ?: item.path,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -583,7 +593,7 @@ private fun FileListView(
                 },
                 trailingContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (!isSelectionMode && item.isVirtual) {
+                        if (!isSelectionMode && item.isAppNode) {
                             FilledTonalIconButton(
                                 onClick = { onAppDetailsClick(item) },
                                 modifier = Modifier.size(32.dp)
@@ -657,16 +667,24 @@ private fun FileDetailsContent(
         Spacer(modifier = Modifier.height(24.dp))
         
         if (file.isVirtual) {
-            val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
-            AppDetailsShortcutCard(
-                summary = "Protected app-storage summary. This node is virtual, read-only, and cannot be opened, shared, or deleted.",
-                onOpenAppDetails = packageName?.let {
-                    {
-                        FileActions.openAppInfo(context, it)
-                        onDismiss()
+            if (file.isAppNode) {
+                val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
+                AppDetailsShortcutCard(
+                    summary = "Protected app-storage summary. This node is virtual, read-only, and cannot be opened, shared, or deleted.",
+                    onOpenAppDetails = packageName?.let {
+                        {
+                            FileActions.openAppInfo(context, it)
+                            onDismiss()
+                        }
                     }
-                }
-            )
+                )
+            } else {
+                Text(
+                    text = "This is a grouped virtual item used to keep the treemap readable. Drill into it to browse the underlying folders and files.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
