@@ -21,6 +21,7 @@
 | [progress/FINISHED.md](progress/FINISHED.md) | Completed tasks | 2026-03-08 |
 | [release/v1.0.1.md](release/v1.0.1.md) | GitHub release notes for version 1.0.1 | 2026-03-08 |
 | [release/v1.0.2.md](release/v1.0.2.md) | GitHub release notes for version 1.0.2 | 2026-03-08 |
+| [release/v1.0.3.md](release/v1.0.3.md) | GitHub release notes for version 1.0.3 | 2026-03-08 |
 | [fastlane/README.md](../fastlane/README.md) | Fastlane CI/CD setup guide | 2026-03-07 |
 | [fastlane/Appfile](../fastlane/Appfile) | Fastlane package configuration | 2026-03-07 |
 | [fastlane/Fastfile](../fastlane/Fastfile) | Fastlane lanes for CI/CD | 2026-03-07 |
@@ -85,7 +86,7 @@ When making changes to the app, immediately update ALL affected documents:
 ---
 
 ## Documentation Version
-This documentation is current for Adirstat version **1.0.2**.
+This documentation is current for Adirstat version **1.0.3**.
 
 ---
 
