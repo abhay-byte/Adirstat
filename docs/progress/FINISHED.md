@@ -15,6 +15,8 @@ This document tracks all completed tasks for Adirstat.
 | TASK-031 | Sortable file list | 2026-03-08 | Dedicated list browsing supports direct drill-in and sorting |
 | TASK-034 | Wildcard and regex search | 2026-03-08 | Search covers cached scan nodes and virtual app-storage nodes |
 | TASK-039 | Expose virtual app-storage entries with sizes and APK/Data/Cache drill-down | 2026-03-08 | Root treemap/list/search now include protected app-storage nodes |
+| ROUND-19 | Scan back confirmation | 2026-03-08 | Added confirmation dialogs before leaving active scan progress from dashboard and treemap screens |
+| ROUND-18 | List multi-select | 2026-03-08 | Added multi-select mode and top-bar select-all actions to dedicated file list and treemap list view |
 | ROUND-17 | Release docs polish | 2026-03-08 | Added a mandatory major-change release checklist to the docs index and fixed release notes to use a GitHub-hosted icon |
 | ROUND-16 | Scoped search and release shrink | 2026-03-08 | Removed dashboard search entry points, scoped search to active scan paths, enlarged the home logo, and enabled release shrinking/resource trimming |
 | ROUND-15 | Launcher icon refresh | 2026-03-08 | Replaced the default launcher icon with the provided Downloads logo asset across legacy and adaptive icon resources, used a transparent adaptive background for the white logo, and replaced the dashboard title text with the logo |

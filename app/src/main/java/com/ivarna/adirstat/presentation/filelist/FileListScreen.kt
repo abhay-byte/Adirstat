@@ -37,22 +37,48 @@ fun FileListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var selectedNode by remember { mutableStateOf<FileNode?>(null) }
+    val selectedPaths = remember { mutableStateListOf<String>() }
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
+    val isSelectionMode = selectedPaths.isNotEmpty()
     
     LaunchedEffect(volumePath) {
         viewModel.loadFiles(volumePath)
     }
+
+    LaunchedEffect(uiState.files) {
+        val visiblePaths = uiState.files.map { it.path }.toSet()
+        selectedPaths.retainAll(visiblePaths)
+    }
     
-    BackHandler(enabled = uiState.navigationStack.isNotEmpty()) {
+    BackHandler(enabled = isSelectionMode || uiState.navigationStack.isNotEmpty()) {
+        if (isSelectionMode) {
+            selectedPaths.clear()
+            return@BackHandler
+        }
         if (!viewModel.navigateBack()) {
             onNavigateBack()
         }
     }
 
+    fun toggleSelection(file: FileNode) {
+        if (selectedPaths.contains(file.path)) {
+            selectedPaths.remove(file.path)
+        } else {
+            selectedPaths.add(file.path)
+        }
+    }
+
     fun onItemClick(file: FileNode) {
+        if (isSelectionMode) {
+            toggleSelection(file)
+            return
+        }
         when (file) {
-            is FileNode.Directory -> viewModel.navigateInto(file)
+            is FileNode.Directory -> {
+                selectedPaths.clear()
+                viewModel.navigateInto(file)
+            }
             is FileNode.File -> {
                 selectedNode = file
                 showBottomSheet = true
@@ -61,8 +87,7 @@ fun FileListScreen(
     }
 
     fun onItemLongPress(file: FileNode) {
-        selectedNode = file
-        showBottomSheet = true
+        toggleSelection(file)
     }
 
     fun resolveSearchRootPath(): String {
@@ -80,30 +105,38 @@ fun FileListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    val currentTitle = uiState.currentDirectory?.name?.ifBlank { "Files" } ?: "Files"
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (uiState.currentDirectory?.isVirtual == true) {
-                            Icon(
-                                imageVector = Icons.Default.Android,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
+                    if (isSelectionMode) {
+                        Text("${selectedPaths.size} selected")
+                    } else {
+                        val currentTitle = uiState.currentDirectory?.name?.ifBlank { "Files" } ?: "Files"
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (uiState.currentDirectory?.isVirtual == true) {
+                                Icon(
+                                    imageVector = Icons.Default.Android,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text(
+                                text = currentTitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
                         }
-                        Text(
-                            text = currentTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = {
+                        if (isSelectionMode) {
+                            selectedPaths.clear()
+                            return@IconButton
+                        }
                         if (!viewModel.navigateBack()) {
                             onNavigateBack()
                         }
@@ -112,7 +145,20 @@ fun FileListScreen(
                     }
                 },
                 actions = {
-                    if (onNavigateToSearch != null) {
+                    if (isSelectionMode) {
+                        IconButton(
+                            onClick = {
+                                selectedPaths.clear()
+                                selectedPaths.addAll(uiState.files.map { it.path })
+                            }
+                        ) {
+                            Icon(Icons.Default.SelectAll, contentDescription = "Select all items")
+                        }
+                        IconButton(onClick = { selectedPaths.clear() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear selection")
+                        }
+                    } else {
+                        if (onNavigateToSearch != null) {
                         IconButton(onClick = {
                             onNavigateToSearch(
                                 resolveSearchRootPath(),
@@ -121,47 +167,48 @@ fun FileListScreen(
                         }) {
                             Icon(Icons.Default.Search, contentDescription = "Search")
                         }
-                    }
-                    var showSortMenu by remember { mutableStateOf(false) }
-                    IconButton(onClick = { showSortMenu = true }) {
-                        Icon(Icons.Default.Sort, contentDescription = "Sort")
-                    }
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = { showSortMenu = false }
-                    ) {
-                        SortOption.entries.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option.displayName) },
-                                onClick = {
-                                    viewModel.setSortOption(option)
-                                    showSortMenu = false
-                                },
-                                leadingIcon = {
-                                    if (uiState.sortOption == option) {
-                                        Icon(Icons.Default.Check, contentDescription = null)
-                                    }
-                                }
-                            )
                         }
-                    }
+                        var showSortMenu by remember { mutableStateOf(false) }
+                        IconButton(onClick = { showSortMenu = true }) {
+                            Icon(Icons.Default.Sort, contentDescription = "Sort")
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false }
+                        ) {
+                            SortOption.entries.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option.displayName) },
+                                    onClick = {
+                                        viewModel.setSortOption(option)
+                                        showSortMenu = false
+                                    },
+                                    leadingIcon = {
+                                        if (uiState.sortOption == option) {
+                                            Icon(Icons.Default.Check, contentDescription = null)
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     
-                    var showFilterMenu by remember { mutableStateOf(false) }
-                    IconButton(onClick = { showFilterMenu = true }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filter")
-                    }
-                    DropdownMenu(
-                        expanded = showFilterMenu,
-                        onDismissRequest = { showFilterMenu = false }
-                    ) {
-                        FilterOption.entries.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option.displayName) },
-                                onClick = {
-                                    viewModel.setFilter(option)
-                                    showFilterMenu = false
-                                }
-                            )
+                        var showFilterMenu by remember { mutableStateOf(false) }
+                        IconButton(onClick = { showFilterMenu = true }) {
+                            Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                        }
+                        DropdownMenu(
+                            expanded = showFilterMenu,
+                            onDismissRequest = { showFilterMenu = false }
+                        ) {
+                            FilterOption.entries.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option.displayName) },
+                                    onClick = {
+                                        viewModel.setFilter(option)
+                                        showFilterMenu = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -248,6 +295,8 @@ fun FileListScreen(
                         ) { file ->
                             FileListItem(
                                 file = file,
+                                isSelectionMode = isSelectionMode,
+                                isSelected = selectedPaths.contains(file.path),
                                 onClick = { onItemClick(file) },
                                 onLongPress = { onItemLongPress(file) },
                                 onAppDetailsClick = FileActions.getPackageNameFromVirtualPath(file.path)?.let { packageName ->
@@ -281,6 +330,8 @@ fun FileListScreen(
 @Composable
 private fun FileListItem(
     file: FileNode,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     onAppDetailsClick: (() -> Unit)? = null
@@ -293,7 +344,14 @@ private fun FileListItem(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongPress
-            )
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.secondaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        )
     ) {
         Row(
             modifier = Modifier
@@ -301,6 +359,14 @@ private fun FileListItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (isSelectionMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onClick() }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
             Icon(
                 imageVector = when (file) {
                     is FileNode.File -> getFileIcon(file.extension)
@@ -366,7 +432,7 @@ private fun FileListItem(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else if (file.isVirtual && onAppDetailsClick != null) {
+                } else if (!isSelectionMode && file.isVirtual && onAppDetailsClick != null) {
                     FilledTonalIconButton(
                         onClick = onAppDetailsClick,
                         modifier = Modifier.size(32.dp)
@@ -380,7 +446,7 @@ private fun FileListItem(
             }
             
             // Chevron for folders to indicate navigability
-            if (isDirectory) {
+            if (isDirectory && !isSelectionMode) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.Default.ChevronRight,

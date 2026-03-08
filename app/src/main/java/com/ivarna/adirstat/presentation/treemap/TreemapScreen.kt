@@ -52,13 +52,38 @@ fun TreemapScreen(
     val displayItemCount by viewModel.displayItemCount.collectAsState()
     var showBottomSheet by remember { mutableStateOf(false) }
     var showListView by remember { mutableStateOf(false) }
-    
+    var showLeaveScanDialog by remember { mutableStateOf(false) }
+    val selectedListPaths = remember { mutableStateListOf<String>() }
+    val isListSelectionMode = showListView && selectedListPaths.isNotEmpty()
+
     LaunchedEffect(volumePath) {
         viewModel.loadTreemap(volumePath)
     }
 
-    BackHandler(enabled = viewModel.canNavigateBack()) {
+    LaunchedEffect(listNodes, showListView) {
+        val visiblePaths = listNodes.map { it.path }.toSet()
+        selectedListPaths.retainAll(visiblePaths)
+        if (!showListView) selectedListPaths.clear()
+    }
+
+    BackHandler(enabled = uiState.isScanning || isListSelectionMode || viewModel.canNavigateBack()) {
+        if (uiState.isScanning) {
+            showLeaveScanDialog = true
+            return@BackHandler
+        }
+        if (isListSelectionMode) {
+            selectedListPaths.clear()
+            return@BackHandler
+        }
         viewModel.navigateBack()
+    }
+
+    fun toggleListSelection(node: FileNode) {
+        if (selectedListPaths.contains(node.path)) {
+            selectedListPaths.remove(node.path)
+        } else {
+            selectedListPaths.add(node.path)
+        }
     }
     
     Scaffold(
@@ -88,6 +113,10 @@ fun TreemapScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
+                        if (uiState.isScanning) {
+                            showLeaveScanDialog = true
+                            return@IconButton
+                        }
                         if (!viewModel.navigateBack()) {
                             onNavigateBack()
                         }
@@ -99,48 +128,65 @@ fun TreemapScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        onNavigateToSearch(
-                            volumePath,
-                            navigationStack.lastOrNull()?.path ?: volumePath
-                        )
-                    }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
-                    }
-
-                    IconButton(onClick = { viewModel.resetZoom() }) {
-                        Icon(
-                            imageVector = Icons.Default.ZoomOutMap,
-                            contentDescription = "Expand"
-                        )
-                    }
-
-                    IconButton(onClick = { showListView = false }) {
-                        Icon(
-                            imageVector = Icons.Default.GridView,
-                            contentDescription = "Treemap",
-                            tint = if (!showListView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    IconButton(onClick = { showListView = true }) {
-                        Icon(
-                            Icons.Default.FormatListBulleted,
-                            contentDescription = "List",
-                            tint = if (showListView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            onNavigateToFileList(navigationStack.lastOrNull()?.path ?: volumePath)
+                    if (isListSelectionMode) {
+                        IconButton(
+                            onClick = {
+                                selectedListPaths.clear()
+                                selectedListPaths.addAll(listNodes.map { it.path })
+                            }
+                        ) {
+                            Icon(Icons.Default.SelectAll, contentDescription = "Select all items")
                         }
-                    ) {
-                        Icon(Icons.Default.FolderOpen, contentDescription = "Open full list")
-                    }
+                        IconButton(onClick = { selectedListPaths.clear() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear selection")
+                        }
+                    } else {
+                        IconButton(onClick = {
+                            onNavigateToSearch(
+                                volumePath,
+                                navigationStack.lastOrNull()?.path ?: volumePath
+                            )
+                        }) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        }
 
-                    IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        IconButton(onClick = { viewModel.resetZoom() }) {
+                            Icon(
+                                imageVector = Icons.Default.ZoomOutMap,
+                                contentDescription = "Expand"
+                            )
+                        }
+
+                        IconButton(onClick = {
+                            selectedListPaths.clear()
+                            showListView = false
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.GridView,
+                                contentDescription = "Treemap",
+                                tint = if (!showListView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        IconButton(onClick = { showListView = true }) {
+                            Icon(
+                                Icons.Default.FormatListBulleted,
+                                contentDescription = "List",
+                                tint = if (showListView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                onNavigateToFileList(navigationStack.lastOrNull()?.path ?: volumePath)
+                            }
+                        ) {
+                            Icon(Icons.Default.FolderOpen, contentDescription = "Open full list")
+                        }
+
+                        IconButton(onClick = { viewModel.refresh() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        }
                     }
                 }
             )
@@ -266,19 +312,22 @@ fun TreemapScreen(
                     if (showListView) {
                         FileListView(
                             nodes = listNodes,
+                            isSelectionMode = isListSelectionMode,
+                            selectedPaths = selectedListPaths.toSet(),
                             onItemClick = { node -> 
-                                when (node) {
-                                    is FileNode.Directory -> viewModel.navigateInto(node)
-                                    is FileNode.File -> {
-                                        viewModel.selectFile(node)
-                                        showBottomSheet = true
+                                if (isListSelectionMode) {
+                                    toggleListSelection(node)
+                                } else {
+                                    when (node) {
+                                        is FileNode.Directory -> viewModel.navigateInto(node)
+                                        is FileNode.File -> {
+                                            viewModel.selectFile(node)
+                                            showBottomSheet = true
+                                        }
                                     }
                                 }
                             },
-                            onItemLongClick = { node ->
-                                viewModel.selectFile(node)
-                                showBottomSheet = true
-                            },
+                            onItemLongClick = { node -> toggleListSelection(node) },
                             onAppDetailsClick = { node ->
                                 FileActions.getPackageNameFromVirtualPath(node.path)?.let { packageName ->
                                     FileActions.openAppInfo(context, packageName)
@@ -368,6 +417,31 @@ fun TreemapScreen(
                 )
             }
         }
+
+        if (showLeaveScanDialog) {
+            AlertDialog(
+                onDismissRequest = { showLeaveScanDialog = false },
+                title = { Text("Leave scan?") },
+                text = {
+                    Text("The storage scan is still running. Leaving now may discard progress and return you to the previous screen.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showLeaveScanDialog = false
+                            onNavigateBack()
+                        }
+                    ) {
+                        Text("Leave")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLeaveScanDialog = false }) {
+                        Text("Stay")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -450,6 +524,8 @@ private fun LegendItem(color: Long, label: String) {
 @Composable
 private fun FileListView(
     nodes: List<FileNode>,
+    isSelectionMode: Boolean,
+    selectedPaths: Set<String>,
     onItemClick: (FileNode) -> Unit,
     onItemLongClick: (FileNode) -> Unit,
     onAppDetailsClick: (FileNode) -> Unit,
@@ -468,23 +544,33 @@ private fun FileListView(
             items = sortedItems,
             key = { item -> item.path }
         ) { item ->
+            val isSelected = selectedPaths.contains(item.path)
             ListItem(
                 headlineContent = { Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 supportingContent = { Text(FileSizeFormatter.format(item.size)) },
                 leadingContent = {
-                    Icon(
-                        imageVector = when {
-                            item is FileNode.Directory && item.isVirtual -> Icons.Default.Android
-                            item is FileNode.Directory -> Icons.Default.Folder
-                            else -> Icons.Default.InsertDriveFile
-                        },
-                        contentDescription = null,
-                        tint = when {
-                            item is FileNode.Directory && item.isVirtual -> FileTypeColorMapper.APP_DATA_COLOR
-                            item is FileNode.Directory -> Color(0xFF5C7A99)
-                            else -> MaterialTheme.colorScheme.primary
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isSelectionMode) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = { onItemClick(item) }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
-                    )
+                        Icon(
+                            imageVector = when {
+                                item is FileNode.Directory && item.isVirtual -> Icons.Default.Android
+                                item is FileNode.Directory -> Icons.Default.Folder
+                                else -> Icons.Default.InsertDriveFile
+                            },
+                            contentDescription = null,
+                            tint = when {
+                                item is FileNode.Directory && item.isVirtual -> FileTypeColorMapper.APP_DATA_COLOR
+                                item is FileNode.Directory -> Color(0xFF5C7A99)
+                                else -> MaterialTheme.colorScheme.primary
+                            }
+                        )
+                    }
                 },
                 overlineContent = {
                     if (item.isVirtual) {
@@ -497,7 +583,7 @@ private fun FileListView(
                 },
                 trailingContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (item.isVirtual) {
+                        if (!isSelectionMode && item.isVirtual) {
                             FilledTonalIconButton(
                                 onClick = { onAppDetailsClick(item) },
                                 modifier = Modifier.size(32.dp)
@@ -509,7 +595,7 @@ private fun FileListView(
                             }
                             Spacer(modifier = Modifier.width(4.dp))
                         }
-                        if (item is FileNode.Directory) {
+                        if (!isSelectionMode && item is FileNode.Directory) {
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
@@ -518,6 +604,13 @@ private fun FileListView(
                         }
                     }
                 },
+                colors = ListItemDefaults.colors(
+                    containerColor = if (isSelected) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
+                ),
                 modifier = Modifier
                     .combinedClickable(
                         onClick = { onItemClick(item) },

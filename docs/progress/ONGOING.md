@@ -12,6 +12,14 @@ No active round tasks. The storage visualization, list browsing, search, and vir
 
 ## Recently Completed (March 8, 2026)
 
+### Bug Fix Round 19 - Scan Back Confirmation
+- Added confirmation dialogs before leaving active scan progress from dashboard and treemap screens
+
+### Bug Fix Round 18 - List Multi-Select
+- Added multi-select mode to the dedicated file list and treemap list view
+- Added a top-bar `Select all` action for the current visible list while selection mode is active
+- Highlighted selected rows and used back/close to exit selection mode cleanly
+
 ### Bug Fix Round 17 - Release Docs Polish
 - Documented the mandatory major-change release workflow in the docs index
 - Fixed GitHub release notes to use a GitHub-hosted icon URL instead of a local relative path

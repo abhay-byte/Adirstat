@@ -48,7 +48,7 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 
 ---
 
-## File List View (F-018 to F-022)
+## File List View (F-018 to F-022, F-038)
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
@@ -57,6 +57,7 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 | F-020 | Filter by Extension/Size/Date | Allow filtering by file extension, size range slider, date range | 🟡 In Progress |
 | F-021 | Wildcard & Regex Search | Search with wildcards (*.mp4) and regex toggle from treemap/file-list scan screens across the active scanned scope plus virtual app-storage nodes | ✅ Complete |
 | F-022 | File Type Grouping | Show file type breakdown with percentage bars | ✅ Complete |
+| F-038 | List Multi-Select | Allow multi-select mode in dedicated file list and treemap list view, including a select-all action for the current visible list | ✅ Complete |
 
 ---
 

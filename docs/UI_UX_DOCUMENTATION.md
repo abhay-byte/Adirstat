@@ -154,6 +154,7 @@ If no partitions found (rare): "No storage volumes detected"
 
 ### Interactions
 - Tap Cancel → Confirmation dialog → Cancel coroutine → Return to Dashboard
+- Press system back during an active scan → Confirmation dialog before leaving the scan screen
 - Auto-navigate to Treemap on completion
 
 ---
@@ -246,6 +247,7 @@ The treemap root combines two sources:
   - Back button + Title "Files"
   - Virtual app folders show a proper leading icon in the title area instead of emoji text prefixes, with single-line ellipsis for long names
   - Sort button (dropdown)
+  - In selection mode, the title changes to the selected count and a `Select all` action appears
 - **Filter Chips:** Horizontal scroll row (All, Images, Videos, Audio, Documents, Apps, Other)
 - **Search Field:** Text field with wildcard/regex toggle
 - **List Area:** LazyColumn of file items
@@ -281,9 +283,10 @@ The treemap root combines two sources:
 ### Interactions
 - Single tap on folder → Navigate into that folder
 - Single tap on file → Bottom sheet
-- Long-press on any row → Bottom sheet
+- Long-press on any row → Enter multi-select mode and select that row
 - Long-press on a virtual app folder → Bottom sheet with a dedicated app-details shortcut card and direct `Open app details` action
 - Virtual app rows in dedicated list mode and treemap list mode show a visible trailing settings button for direct App Info access
+- While selection mode is active, tapping rows toggles their selection and the top bar can select all currently visible rows
 - System back inside a folder → Navigate to parent folder
 - Tap sort → Show dropdown
 - Tap filter chip → Apply filter
@@ -292,6 +295,7 @@ The treemap root combines two sources:
 - Embedded list view inside Treemap now uses the full raw child list for the current level, so app-data virtual nodes are not dropped behind treemap grouping
 - Dedicated File List screen shows real folders plus virtual app-data folders at the root
 - Tapping a directory or virtual app folder in list view drills into it directly with the same single-tap behavior used in the dedicated File List screen
+- Treemap list mode also supports the same long-press multi-select mode and top-bar `Select all` action as the dedicated file list
 
 ---
 

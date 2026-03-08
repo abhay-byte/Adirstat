@@ -1,8 +1,10 @@
 package com.ivarna.adirstat.presentation.dashboard
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -45,6 +47,11 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    var showLeaveScanDialog by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = uiState.isScanning) {
+        showLeaveScanDialog = true
+    }
     
     // Reload data on resume - critical for updating after permissions granted
     DisposableEffect(lifecycleOwner) {
@@ -166,6 +173,31 @@ fun DashboardScreen(
                 }
             }
         }
+    }
+
+    if (showLeaveScanDialog) {
+        AlertDialog(
+            onDismissRequest = { showLeaveScanDialog = false },
+            title = { Text("Leave scan?") },
+            text = {
+                Text("The current scan is still running. Leaving now may discard progress and return you to the home screen.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLeaveScanDialog = false
+                        (context as? Activity)?.finish()
+                    }
+                ) {
+                    Text("Leave")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveScanDialog = false }) {
+                    Text("Stay")
+                }
+            }
+        )
     }
 }
 

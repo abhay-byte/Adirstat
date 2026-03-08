@@ -83,6 +83,7 @@ The app shall report scan progress via a Kotlin Flow, emitting:
 - Estimated time remaining
 
 The scan shall be cancellable via a coroutine cancellation mechanism.
+If the user presses system back while a scan is active, the app shall show a confirmation dialog before leaving the scan screen.
 
 #### FR-SCAN-05: Scan Result Caching
 The app shall cache scan results in Room database to avoid re-scanning unchanged partitions. Cache shall be invalidated when:
@@ -172,6 +173,9 @@ Each list row shall display:
 - Size (formatted: KB/MB/GB)
 - Date modified
 - Full path (truncated with ellipsis)
+
+#### FR-LIST-07: Multi-Select List Mode
+The app shall support multi-select mode in dedicated file list view and treemap list view. Long-pressing a row shall enter selection mode, tapping rows shall toggle selection, and the top app bar shall expose a `Select all` action for the currently visible list.
 
 ---
 
@@ -414,7 +418,7 @@ The app shall include the following screens:
 |--------|--------------|
 | SCAN | FR-SCAN-01 through FR-SCAN-08 |
 | TREEMAP | FR-TREE-01 through FR-TREE-06 |
-| FILELIST | FR-LIST-01 through FR-LIST-06 |
+| FILELIST | FR-LIST-01 through FR-LIST-07 |
 | DUPLICATE | FR-DUP-01 through FR-DUP-04 |
 | PARTITION | FR-PART-01 through FR-PART-04 |
 | APPS | FR-APP-01 through FR-APP-03 |
