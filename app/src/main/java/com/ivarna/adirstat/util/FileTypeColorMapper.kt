@@ -16,6 +16,7 @@ object FileTypeColorMapper {
     val DOCUMENT_COLOR = Color(0xFFFF9800)    // Orange
     val ARCHIVE_COLOR = Color(0xFF795548)     // Brown
     val CODE_COLOR = Color(0xFF00BCD4)        // Cyan
+    val APP_DATA_COLOR = Color(0xFF455A64)    // Dark blue-grey for virtual app data
     val OTHER_COLOR = Color(0xFF607D8B)       // Blue-grey (fallback)
     
     /**
@@ -46,6 +47,7 @@ object FileTypeColorMapper {
      * Get color for any file node (file or directory)
      */
     fun getColorForNode(node: FileNode): Color {
+        if (node.isVirtual) return APP_DATA_COLOR
         return when (node) {
             is FileNode.File -> getColorForFile(node.extension)
             is FileNode.Directory -> {

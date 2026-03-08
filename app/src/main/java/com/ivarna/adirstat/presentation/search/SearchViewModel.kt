@@ -2,6 +2,7 @@ package com.ivarna.adirstat.presentation.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ivarna.adirstat.data.source.VirtualNodeBuilder
 import com.ivarna.adirstat.domain.model.FileNode
 import com.ivarna.adirstat.domain.usecase.ScanStorageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +27,8 @@ data class SearchUiState(
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val scanStorageUseCase: ScanStorageUseCase
+    private val scanStorageUseCase: ScanStorageUseCase,
+    private val virtualNodeBuilder: VirtualNodeBuilder
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -44,12 +46,16 @@ class SearchViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 // Load files from cached scans - try internal storage first
-                // getCachedScan now automatically adds virtual Android/data nodes
                 val result = scanStorageUseCase.getCachedScan("/storage/emulated/0")
                 result.fold(
                     onSuccess = { node ->
                         if (node != null) {
-                            allFiles = flattenFileNode(node)
+                            val realNodes = flattenFileNode(node)
+                            val appNodes = virtualNodeBuilder.buildAppVirtualNodes()
+                                .flatMap { flattenFileNode(it) }
+                            allFiles = (realNodes + appNodes)
+                                .distinctBy { it.path }
+                                .sortedByDescending { it.sizeBytes }
                         }
                     },
                     onFailure = { /* ignore */ }
@@ -62,7 +68,12 @@ class SearchViewModel @Inject constructor(
                     altResult.fold(
                         onSuccess = { node ->
                             if (node != null) {
-                                allFiles = flattenFileNode(node)
+                                val realNodes = flattenFileNode(node)
+                                val appNodes = virtualNodeBuilder.buildAppVirtualNodes()
+                                    .flatMap { flattenFileNode(it) }
+                                allFiles = (realNodes + appNodes)
+                                    .distinctBy { it.path }
+                                    .sortedByDescending { it.sizeBytes }
                             }
                         },
                         onFailure = { /* ignore */ }
@@ -138,7 +149,8 @@ class SearchViewModel @Inject constructor(
     private fun searchSimple(query: String): List<FileNode> {
         return allFiles.filter { file ->
             file.name.contains(query, ignoreCase = true) ||
-            file.path.contains(query, ignoreCase = true)
+            file.path.contains(query, ignoreCase = true) ||
+            (file.virtualLabel?.contains(query, ignoreCase = true) == true)
         }
     }
 
@@ -155,7 +167,8 @@ class SearchViewModel @Inject constructor(
             val regex = Regex(pattern, RegexOption.IGNORE_CASE)
             allFiles.filter { file ->
                 regex.containsMatchIn(file.name) ||
-                regex.containsMatchIn(file.path)
+                regex.containsMatchIn(file.path) ||
+                (file.virtualLabel?.let(regex::containsMatchIn) == true)
             }
         } catch (e: Exception) {
             emptyList()

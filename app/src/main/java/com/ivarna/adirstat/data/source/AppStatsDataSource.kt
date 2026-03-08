@@ -21,8 +21,8 @@ class AppStatsDataSource @Inject constructor(
     /**
      * Get all installed apps with their storage stats
      */
-    suspend fun getAllAppsWithStorageStats(): List<AppStorageInfo> = withContext(Dispatchers.IO) {
-        val apps = mutableListOf<AppStorageInfo>()
+    suspend fun getAllAppsWithStorageStats(): List<InstalledAppStorageInfo> = withContext(Dispatchers.IO) {
+        val apps = mutableListOf<InstalledAppStorageInfo>()
         
         val installedApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
         
@@ -36,7 +36,7 @@ class AppStatsDataSource @Inject constructor(
                 // Only include apps with some storage usage
                 if (apkSize > 0) {
                     apps.add(
-                        AppStorageInfo(
+                        InstalledAppStorageInfo(
                             packageName = appInfo.packageName,
                             appName = packageManager.getApplicationLabel(appInfo).toString(),
                             apkSize = apkSize,
@@ -60,7 +60,7 @@ class AppStatsDataSource @Inject constructor(
     /**
      * Get top N apps by storage usage
      */
-    suspend fun getTopAppsByStorage(count: Int): List<AppStorageInfo> {
+    suspend fun getTopAppsByStorage(count: Int): List<InstalledAppStorageInfo> {
         return getAllAppsWithStorageStats().take(count)
     }
 }
@@ -68,7 +68,7 @@ class AppStatsDataSource @Inject constructor(
 /**
  * App storage information
  */
-data class AppStorageInfo(
+data class InstalledAppStorageInfo(
     val packageName: String,
     val appName: String,
     val apkSize: Long,

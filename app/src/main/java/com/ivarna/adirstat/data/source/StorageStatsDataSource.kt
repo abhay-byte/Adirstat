@@ -1,258 +1,213 @@
 package com.ivarna.adirstat.data.source
 
+import android.app.Application
+import android.app.usage.StorageStats
 import android.app.usage.StorageStatsManager
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Environment
 import android.os.Process
 import android.os.StatFs
 import android.os.storage.StorageManager
+import android.util.Log
+import com.ivarna.adirstat.util.PermissionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.UUID
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Data source for accurate storage statistics using StorageStatsManager.
- * This provides actual storage consumption data at the partition level.
- */
 @Singleton
 class StorageStatsDataSource @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val permissionManager: PermissionManager
 ) {
-    private val storageStatsManager: StorageStatsManager? =
-        context.getSystemService(Context.STORAGE_STATS_SERVICE) as? StorageStatsManager
-
-    private val storageManager: StorageManager =
+    private val storageStatsManager: StorageStatsManager by lazy {
+        context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+    }
+    private val storageManager: StorageManager by lazy {
         context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+    }
+    private val packageManager = context.packageManager
 
-    private val packageManager: PackageManager = context.packageManager
-
-    /**
-     * Get comprehensive storage breakdown for a volume.
-     * This uses multiple sources to build an accurate picture.
-     */
-    suspend fun getStorageBreakdown(volumePath: String): StorageBreakdown = withContext(Dispatchers.IO) {
-        val breakdown = StorageBreakdown()
-
-        // Get basic stats using StatFs
-        try {
-            val statFs = StatFs(volumePath)
-            breakdown.totalBytes = statFs.totalBytes
-            breakdown.freeBytes = statFs.availableBytes
-            breakdown.usedBytes = breakdown.totalBytes - breakdown.freeBytes
-        } catch (e: Exception) {
-            // Fall back to defaults
-        }
-
-        // If we have StorageStatsManager, get more accurate data
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                val uuid = getStorageUuid(volumePath)
-                if (uuid != null) {
-                    // Get internal storage stats
-                    val internalStats = getInternalStorageStats(uuid)
-                    breakdown.appsBytes = internalStats.appsBytes
-                    breakdown.mediaBytes = internalStats.mediaBytes
-                    breakdown.otherBytes = internalStats.otherBytes
-
-                    // Get app breakdown using StorageStatsManager
-                    breakdown.appBreakdown = getAppStorageBreakdown()
-                }
-            } catch (e: Exception) {
-                // StorageStatsManager not available or permission denied
-            }
-        }
-
-        breakdown
+    companion object {
+        private const val TAG = "StorageStatsDataSource"
     }
 
     /**
-     * Get storage UUID for a path
+     * Get partition totals (total, used, free bytes).
+     * getTotalBytes() and getFreeBytes() REQUIRE NO SPECIAL PERMISSION.
+     * Call this on Dashboard load even before scan.
      */
-    private fun getStorageUuid(path: String): UUID? {
+    fun getPartitionTotals(): PartitionTotals {
         return try {
-            val volume = storageManager.getStorageVolume(File(path))
-            volume?.uuid?.let { UUID.fromString(it) }
-        } catch (e: Exception) {
-            // Default to internal storage UUID
-            if (path.startsWith(Environment.getExternalStorageDirectory().absolutePath)) {
-                try {
-                    StorageManager.UUID_DEFAULT
-                } catch (e: Exception) {
-                    null
-                }
-            } else null
+            val total = storageStatsManager.getTotalBytes(StorageManager.UUID_DEFAULT)
+            val free = storageStatsManager.getFreeBytes(StorageManager.UUID_DEFAULT)
+            PartitionTotals(
+                totalBytes = total,
+                freeBytes = free,
+                usedBytes = total - free
+            )
+        } catch (e: IOException) {
+            Log.e(TAG, "Failed to get partition totals", e)
+            // Fallback to StatFs
+            val stat = StatFs(Environment.getDataDirectory().path)
+            PartitionTotals(
+                totalBytes = stat.totalBytes,
+                freeBytes = stat.availableBytes,
+                usedBytes = stat.totalBytes - stat.availableBytes
+            )
         }
     }
 
     /**
-     * Get internal storage statistics using StorageStatsManager
+     * Get per-app storage stats for ALL installed packages.
+     *
+     * REQUIRES: PACKAGE_USAGE_STATS permission checked via AppOpsManager.
+     * Check permissionManager.checkAllPermissions().hasUsageStatsAccess before calling this.
+     *
+     * Returns empty list with isPermissionMissing=true if permission not granted.
      */
-    private fun getInternalStorageStats(uuid: UUID): InternalStorageStats {
-        val stats = InternalStorageStats()
+    fun getPerAppStorageStats(): AppStorageResult {
+        val permissions = permissionManager.checkAllPermissions()
+        if (!permissions.hasUsageStatsAccess) {
+            Log.w(TAG, "PACKAGE_USAGE_STATS not granted — returning empty app stats")
+            return AppStorageResult(apps = emptyList(), isPermissionMissing = true)
+        }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val userHandle = Process.myUserHandle()
+        val apps = mutableListOf<AppStorageInfoBytes>()
+
+        // Get all installed packages including system apps
+        val installedPackages = try {
+            packageManager.getInstalledPackages(PackageManager.GET_META_DATA)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get installed packages", e)
+            return AppStorageResult(apps = emptyList(), isPermissionMissing = false)
+        }
+        
+        Log.d(TAG, "Querying stats for ${installedPackages.size} packages")
+
+        for (pkg in installedPackages) {
             try {
-                // Get total and free space
-                stats.totalBytes = storageStatsManager?.getTotalBytes(uuid) ?: 0L
-                stats.freeBytes = storageStatsManager?.getFreeBytes(uuid) ?: 0L
-                stats.usedBytes = stats.totalBytes - stats.freeBytes
-
-                // Get stats for current app
-                val appStats = storageStatsManager?.queryStatsForPackage(
-                    uuid,
-                    context.packageName,
-                    Process.myUserHandle()
+                val stats = storageStatsManager.queryStatsForPackage(
+                    StorageManager.UUID_DEFAULT,  // internal storage UUID
+                    pkg.packageName,
+                    userHandle
                 )
 
-                if (appStats != null) {
-                    // This is just one app, we need all apps
-                }
-            } catch (e: Exception) {
-                // Permission denied or other error
-            }
-        }
-
-        return stats
-    }
-
-    /**
-     * Get per-app storage breakdown using StorageStatsManager
-     */
-    private fun getAppStorageBreakdown(): List<AppStorageBreakdownItem> {
-        val apps = mutableListOf<AppStorageBreakdownItem>()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                val installedApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-
-                for (appInfo in installedApps) {
-                    try {
-                        val uuid = StorageManager.UUID_DEFAULT
-                        val stats = storageStatsManager?.queryStatsForPackage(
-                            uuid,
-                            appInfo.packageName,
-                            Process.myUserHandle()
-                        )
-
-                        if (stats != null) {
-                            val total = stats.appBytes + stats.dataBytes + stats.cacheBytes
-                            apps.add(
-                                AppStorageBreakdownItem(
-                                    packageName = appInfo.packageName,
-                                    appName = packageManager.getApplicationLabel(appInfo).toString(),
-                                    apkSize = stats.appBytes,
-                                    dataSize = stats.dataBytes,
-                                    cacheSize = stats.cacheBytes,
-                                    totalSize = total,
-                                    isSystemApp = (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
-                                )
-                            )
-                        }
-                    } catch (e: Exception) {
-                        // Skip this app
-                    }
-                }
-            } catch (e: Exception) {
-                // Permission denied
-            }
-        }
-
-        return apps.sortedByDescending { it.totalSize }
-    }
-
-    /**
-     * Get total storage for a specific volume path
-     */
-    fun getVolumeTotalBytes(path: String): Long {
-        return try {
-            StatFs(path).totalBytes
-        } catch (e: Exception) {
-            0L
-        }
-    }
-
-    /**
-     * Get free storage for a specific volume path
-     */
-    fun getVolumeFreeBytes(path: String): Long {
-        return try {
-            StatFs(path).availableBytes
-        } catch (e: Exception) {
-            0L
-        }
-    }
-
-    /**
-     * Get used storage for a specific volume path
-     */
-    fun getVolumeUsedBytes(path: String): Long {
-        return getVolumeTotalBytes(path) - getVolumeFreeBytes(path)
-    }
-
-    /**
-     * Calculate estimated apps storage from package manager (fallback when StorageStatsManager unavailable)
-     */
-    suspend fun getEstimatedAppsStorage(): Long = withContext(Dispatchers.IO) {
-        var total = 0L
-        try {
-            val installedApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-            for (appInfo in installedApps) {
-                try {
-                    val sourceDir = appInfo.sourceDir
-                    if (sourceDir != null) {
-                        total += File(sourceDir).length()
-                    }
+                val appName = try {
+                    pkg.applicationInfo?.loadLabel(packageManager)?.toString() ?: pkg.packageName
                 } catch (e: Exception) {
-                    // Skip
+                    pkg.packageName
+                }
+
+                apps.add(AppStorageInfoBytes(
+                    packageName = pkg.packageName,
+                    appName = appName,
+                    apkBytes = stats.appBytes,
+                    dataBytes = stats.dataBytes,
+                    cacheBytes = stats.cacheBytes,
+                    totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes,
+                    isSystemApp = (pkg.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0
+                ))
+
+                Log.d(TAG, "${pkg.packageName}: apk=${stats.appBytes} data=${stats.dataBytes} cache=${stats.cacheBytes}")
+
+            } catch (e: PackageManager.NameNotFoundException) {
+                // Package removed between listing and querying — skip silently
+            } catch (e: IOException) {
+                Log.w(TAG, "IOException for ${pkg.packageName}: ${e.message}")
+                // App may be on different volume or unavailable — include with APK size only
+                val apkFile = pkg.applicationInfo?.sourceDir?.let { File(it) }
+                if (apkFile?.exists() == true) {
+                    apps.add(AppStorageInfoBytes(
+                        packageName = pkg.packageName,
+                        appName = try { pkg.applicationInfo?.loadLabel(packageManager)?.toString() ?: pkg.packageName }
+                                  catch (e2: Exception) { pkg.packageName },
+                        apkBytes = apkFile.length(),
+                        dataBytes = 0L,
+                        cacheBytes = 0L,
+                        totalBytes = apkFile.length(),
+                        isSystemApp = (pkg.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0,
+                        isPartialData = true
+                    ))
                 }
             }
-        } catch (e: Exception) {
-            // Ignore
         }
-        total
+
+        Log.d(TAG, "Total apps: ${apps.size}, Total app storage: ${apps.sumOf { it.totalBytes }}")
+        return AppStorageResult(apps = apps.sortedByDescending { it.totalBytes }, isPermissionMissing = false)
+    }
+
+    /**
+     * Aggregate the per-app stats into category totals for the Dashboard bar.
+     */
+    fun computeStorageCategories(
+        filesystemBytes: Long,        // from file scan
+        appStats: List<AppStorageInfoBytes>,
+        mediaTotals: MediaStoreDataSource.MediaTotals
+    ): StorageCategories {
+        val totals = getPartitionTotals()
+
+        val totalAppBytes = appStats.sumOf { stats -> stats.apkBytes }
+        val totalDataBytes = appStats.sumOf { stats -> stats.dataBytes }
+        val totalCacheBytes = appStats.sumOf { stats -> stats.cacheBytes }
+        val systemBytes = maxOf(0L, totals.usedBytes - filesystemBytes - totalAppBytes - totalDataBytes - totalCacheBytes)
+
+        return StorageCategories(
+            appsBytes = totalAppBytes,
+            appDataBytes = totalDataBytes,
+            cacheBytes = totalCacheBytes,
+            filesBytes = filesystemBytes,
+            mediaBytes = mediaTotals.totalBytes,
+            imageBytes = mediaTotals.imageBytes,
+            videoBytes = mediaTotals.videoBytes,
+            audioBytes = mediaTotals.audioBytes,
+            systemBytes = systemBytes,
+            freeBytes = totals.freeBytes,
+            totalBytes = totals.totalBytes,
+            usedBytes = totals.usedBytes
+        )
     }
 }
 
-/**
- * Comprehensive storage breakdown for a volume
- */
-data class StorageBreakdown(
-    var totalBytes: Long = 0L,
-    var freeBytes: Long = 0L,
-    var usedBytes: Long = 0L,
-    var appsBytes: Long = 0L,
-    var mediaBytes: Long = 0L,
-    var otherBytes: Long = 0L,
-    var appBreakdown: List<AppStorageBreakdownItem> = emptyList()
-)
+data class PartitionTotals(val totalBytes: Long, val freeBytes: Long, val usedBytes: Long)
 
-/**
- * Internal storage statistics
- */
-data class InternalStorageStats(
-    var totalBytes: Long = 0L,
-    var freeBytes: Long = 0L,
-    var usedBytes: Long = 0L,
-    var appsBytes: Long = 0L,
-    var mediaBytes: Long = 0L,
-    var otherBytes: Long = 0L
-)
-
-/**
- * Per-app storage breakdown item
- */
-data class AppStorageBreakdownItem(
+// App storage info for StorageStats - with Bytes naming convention
+data class AppStorageInfoBytes(
     val packageName: String,
     val appName: String,
-    val apkSize: Long,
-    val dataSize: Long,
-    val cacheSize: Long,
-    val totalSize: Long,
-    val isSystemApp: Boolean
+    val apkBytes: Long,
+    val dataBytes: Long,
+    val cacheBytes: Long,
+    val totalBytes: Long,
+    val isSystemApp: Boolean = false,
+    val isPartialData: Boolean = false
 )
+
+// Type alias for easier usage
+typealias AppStorageInfo = AppStorageInfoBytes
+
+data class AppStorageResult(
+    val apps: List<AppStorageInfoBytes>,
+    val isPermissionMissing: Boolean
+)
+
+data class StorageCategories(
+    val appsBytes: Long,
+    val appDataBytes: Long,
+    val cacheBytes: Long,
+    val filesBytes: Long,
+    val mediaBytes: Long,
+    val imageBytes: Long,
+    val videoBytes: Long,
+    val audioBytes: Long,
+    val systemBytes: Long,
+    val freeBytes: Long,
+    val totalBytes: Long,
+    val usedBytes: Long
+)
+
+typealias StorageBreakdown = StorageCategories

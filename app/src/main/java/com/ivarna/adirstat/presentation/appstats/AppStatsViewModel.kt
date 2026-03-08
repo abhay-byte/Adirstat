@@ -2,8 +2,8 @@ package com.ivarna.adirstat.presentation.appstats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ivarna.adirstat.data.source.AppStorageInfo
 import com.ivarna.adirstat.data.source.AppStatsDataSource
+import com.ivarna.adirstat.data.source.InstalledAppStorageInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 data class AppStatsUiState(
     val isLoading: Boolean = true,
-    val apps: List<AppStorageInfo> = emptyList(),
+    val apps: List<InstalledAppStorageInfo> = emptyList(),
     val totalAppSize: Long = 0,
     val totalDataSize: Long = 0,
     val totalCacheSize: Long = 0,

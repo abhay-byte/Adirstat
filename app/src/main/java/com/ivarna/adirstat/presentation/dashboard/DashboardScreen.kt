@@ -24,6 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.ivarna.adirstat.data.source.StorageCategories
 import com.ivarna.adirstat.util.FileSizeFormatter
 import java.text.SimpleDateFormat
 import java.util.*
@@ -33,11 +37,24 @@ import kotlin.math.abs
 @Composable
 fun DashboardScreen(
     onNavigateToTreemap: (String) -> Unit,
+    onNavigateToSearch: () -> Unit,
     onNavigateToSettings: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    
+    // Reload data on resume - critical for updating after permissions granted
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadDashboardData()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     
     // Permission request launcher
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -64,6 +81,9 @@ fun DashboardScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
+                    IconButton(onClick = onNavigateToSearch) {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
@@ -119,14 +139,13 @@ fun DashboardScreen(
                 }
                 uiState.isScanning -> {
                     ScanProgressContent(
-                        progress = uiState.scanProgress,
+                        progress = (uiState.scanProgress * 100).toInt().toString() + "%",
                         onCancel = { }
                     )
                 }
                 else -> {
                     StorageVolumesContent(
                         volumes = uiState.storageVolumes,
-                        onScan = { path -> viewModel.startScan(path) },
                         onVolumeClick = onNavigateToTreemap
                     )
                 }
@@ -246,33 +265,51 @@ private fun ScanProgressContent(
 
 @Composable
 private fun StorageVolumesContent(
-    volumes: List<StorageVolumeUi>,
-    onScan: (String) -> Unit,
+    volumes: List<DashboardViewModel.StorageVolumeInfo>,
     onVolumeClick: (String) -> Unit
 ) {
+    val primaryVolume = volumes.firstOrNull { it.path == "/storage/emulated/0" } ?: volumes.firstOrNull()
+    val secondaryVolumes = volumes.filter { it != primaryVolume }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            Text(
-                text = "Storage Volumes",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+        primaryVolume?.let { volume ->
+            item {
+                SectionHeader(
+                    title = "Internal Storage",
+                    subtitle = "Your main phone storage with scan status, space usage, and quick breakdown."
+                )
+            }
+
+            item {
+                InternalStorageSpotlightCard(
+                    volume = volume,
+                    onClick = { onVolumeClick(volume.path) }
+                )
+            }
         }
-        
-        items(volumes) { volume ->
+
+        if (secondaryVolumes.isNotEmpty()) {
+            item {
+                SectionHeader(
+                    title = "Other Volumes",
+                    subtitle = "SD cards and removable storage appear here when available."
+                )
+            }
+        }
+
+        items(secondaryVolumes) { volume ->
             StorageVolumeCard(
                 volume = volume,
-                onScan = { onScan(volume.path) },
                 onClick = { onVolumeClick(volume.path) }
             )
         }
-        
+
         // Empty state when no external storage
-        if (volumes.size <= 1) {
+        if (secondaryVolumes.isEmpty()) {
             item {
                 EmptyStorageState()
             }
@@ -280,20 +317,236 @@ private fun StorageVolumesContent(
     }
 }
 
+@Composable
+private fun SectionHeader(
+    title: String,
+    subtitle: String
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun InternalStorageSpotlightCard(
+    volume: DashboardViewModel.StorageVolumeInfo,
+    onClick: () -> Unit
+) {
+    val categories = volume.storageCategories ?: StorageCategories(
+        appsBytes = 0L,
+        appDataBytes = 0L,
+        cacheBytes = 0L,
+        filesBytes = 0L,
+        mediaBytes = 0L,
+        imageBytes = 0L,
+        videoBytes = 0L,
+        audioBytes = 0L,
+        systemBytes = 0L,
+        freeBytes = volume.freeBytes,
+        totalBytes = volume.totalBytes,
+        usedBytes = volume.usedBytes
+    )
+
+    Card(
+        onClick = {
+            if (!volume.neverScanned) {
+                onClick()
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.SdCard,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = volume.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Main device storage · ${FileSizeFormatter.format(volume.totalBytes)} total",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                ScanStalenessIndicator(lastScanTime = volume.lastScanTime)
+            }
+
+            StorageHeadlineStats(volume = volume)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                StorageSummaryPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Apps",
+                    value = FileSizeFormatter.format(categories.appsBytes + categories.appDataBytes + categories.cacheBytes)
+                )
+                StorageSummaryPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Media",
+                    value = FileSizeFormatter.format(categories.mediaBytes)
+                )
+                StorageSummaryPill(
+                    modifier = Modifier.weight(1f),
+                    label = "Files",
+                    value = FileSizeFormatter.format(categories.filesBytes)
+                )
+            }
+
+            MultiSegmentStorageBar(categories = categories)
+            StorageBreakdownLegend(categories = categories)
+
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = if (volume.lastScanTime != null) {
+                            "Last scanned: ${formatTimestamp(volume.lastScanTime)}"
+                        } else {
+                            "No scan yet. Use the Scan Storage button below to create the first map."
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = if (volume.neverScanned) {
+                            "Once scanned, this section opens the treemap and list views for deeper browsing."
+                        } else {
+                            "Tap anywhere on this section to open the storage map and browse inside folders or apps."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StorageSummaryPill(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String
+) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StorageVolumeCard(
-    volume: StorageVolumeUi,
-    onScan: () -> Unit,
-    onClick: () -> Unit
+    volume: DashboardViewModel.StorageVolumeInfo,
+    onClick: () -> Unit,
+    highlighted: Boolean = false
 ) {
-    val usedPercentage = if (volume.totalBytes > 0) {
-        (volume.usedBytes.toFloat() / volume.totalBytes.toFloat()) * 100
-    } else 0f
+    val categories = volume.storageCategories ?: StorageCategories(
+        appsBytes = 0L,
+        appDataBytes = 0L,
+        cacheBytes = 0L,
+        filesBytes = 0L,
+        mediaBytes = 0L,
+        imageBytes = 0L,
+        videoBytes = 0L,
+        audioBytes = 0L,
+        systemBytes = 0L,
+        freeBytes = volume.freeBytes,
+        totalBytes = volume.totalBytes,
+        usedBytes = volume.usedBytes
+    )
     
     Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        onClick = {
+            if (!volume.neverScanned) {
+                onClick()
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (highlighted) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        border = if (highlighted) {
+            androidx.compose.foundation.BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+            )
+        } else null
     ) {
         Column(
             modifier = Modifier
@@ -332,24 +585,21 @@ private fun StorageVolumeCard(
             }
             
             Spacer(modifier = Modifier.height(16.dp))
+
+            StorageHeadlineStats(volume = volume)
+
+            Spacer(modifier = Modifier.height(14.dp))
             
             // Multi-segment storage bar - shows Apps, Media, Other breakdown
             MultiSegmentStorageBar(
-                appsBytes = volume.appsBytes,
-                mediaBytes = volume.mediaBytes,
-                otherBytes = volume.otherBytes,
-                totalBytes = volume.totalBytes
+                categories = categories
             )
             
             Spacer(modifier = Modifier.height(12.dp))
             
             // Storage breakdown legend
             StorageBreakdownLegend(
-                appsBytes = volume.appsBytes,
-                mediaBytes = volume.mediaBytes,
-                otherBytes = volume.otherBytes,
-                freeBytes = volume.freeBytes,
-                totalBytes = volume.totalBytes
+                categories = categories
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -361,109 +611,118 @@ private fun StorageVolumeCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            } else {
+                Text(
+                    text = "Use the Scan Storage button to create the first scan.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Scan button
-            Button(
-                onClick = onScan,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Search, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (volume.lastScanTime != null) "Rescan" else "Scan Now")
+
+            if (!volume.neverScanned) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Tap this card to open the storage map.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
 }
 
 @Composable
-private fun MultiSegmentStorageBar(
-    appsBytes: Long,
-    mediaBytes: Long,
-    otherBytes: Long,
-    totalBytes: Long
+private fun StorageHeadlineStats(
+    volume: DashboardViewModel.StorageVolumeInfo
 ) {
+    val usedPercent = if (volume.totalBytes > 0L) {
+        ((volume.usedBytes.toDouble() / volume.totalBytes.toDouble()) * 100).toInt()
+    } else 0
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        StorageStatChip(
+            modifier = Modifier.weight(1f),
+            label = "Used",
+            value = "${FileSizeFormatter.format(volume.usedBytes)} · $usedPercent%"
+        )
+        StorageStatChip(
+            modifier = Modifier.weight(1f),
+            label = "Free",
+            value = FileSizeFormatter.format(volume.freeBytes)
+        )
+    }
+}
+
+@Composable
+private fun StorageStatChip(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String
+) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun MultiSegmentStorageBar(
+    categories: StorageCategories
+) {
+    val totalBytes = categories.totalBytes
     if (totalBytes <= 0) return
-    
-    // Color palette for storage segments
-    val appsColor = Color(0xFF4CAF50)     // Green - Apps
-    val mediaColor = Color(0xFFF44336)     // Red - Media
-    val otherColor = Color(0xFF2196F3)    // Blue - Other/Files
-    val freeColor = Color(0xFF9E9E9E)     // Grey - Free
-    
-    val usedBytes = appsBytes + mediaBytes + otherBytes
-    val freeBytes = totalBytes - usedBytes
-    
-    // Calculate proportions
-    val appsRatio = appsBytes.toFloat() / totalBytes.toFloat()
-    val mediaRatio = mediaBytes.toFloat() / totalBytes.toFloat()
-    val otherRatio = otherBytes.toFloat() / totalBytes.toFloat()
-    val freeRatio = freeBytes.toFloat() / totalBytes.toFloat()
+    val freeColor = Color(0xFF9E9E9E)
+    val freeBytes = categories.freeBytes.coerceAtLeast(0L)
+    val segments = listOf(
+        Triple("Apps", categories.appsBytes, Color(0xFF2196F3)),
+        Triple("Data", categories.appDataBytes, Color(0xFF4CAF50)),
+        Triple("Cache", categories.cacheBytes, Color(0xFFFF9800)),
+        Triple("Images", categories.imageBytes, Color(0xFFE91E63)),
+        Triple("Video", categories.videoBytes, Color(0xFFF44336)),
+        Triple("Audio", categories.audioBytes, Color(0xFF9C27B0)),
+        Triple("Files", categories.filesBytes, Color(0xFF00BCD4)),
+        Triple("System", categories.systemBytes, Color(0xFF607D8B))
+    ).filter { (_, bytes, _) -> bytes > 0L }
     
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Multi-segment bar
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(16.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(freeColor.copy(alpha = 0.3f))
-        ) {
-            var currentOffset = 0f
-            
-            // Apps segment
-            if (appsRatio > 0.01f) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(appsRatio)
-                        .offset(x = (currentOffset * 100).dp * freeRatio.coerceAtLeast(0.01f)) // Approximate
-                )
-                currentOffset += appsRatio
-            }
-        }
-        
-        // Simpler approach using row with weights
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(16.dp)
                 .clip(RoundedCornerShape(8.dp))
         ) {
-            // Apps (green)
-            if (appsRatio > 0.001f) {
+            segments.forEach { (_, bytes, color) ->
                 Box(
                     modifier = Modifier
-                        .weight(appsRatio.coerceAtLeast(0.001f))
+                        .weight((bytes.toFloat() / totalBytes.toFloat()).coerceAtLeast(0.001f))
                         .fillMaxHeight()
-                        .background(appsColor)
+                        .background(color)
                 )
             }
-            // Media (red)
-            if (mediaRatio > 0.001f) {
+            if (freeBytes > 0L) {
                 Box(
                     modifier = Modifier
-                        .weight(mediaRatio.coerceAtLeast(0.001f))
-                        .fillMaxHeight()
-                        .background(mediaColor)
-                )
-            }
-            // Other files (blue)
-            if (otherRatio > 0.001f) {
-                Box(
-                    modifier = Modifier
-                        .weight(otherRatio.coerceAtLeast(0.001f))
-                        .fillMaxHeight()
-                        .background(otherColor)
-                )
-            }
-            // Free space (grey)
-            if (freeRatio > 0.001f) {
-                Box(
-                    modifier = Modifier
-                        .weight(freeRatio.coerceAtLeast(0.001f))
+                        .weight((freeBytes.toFloat() / totalBytes.toFloat()).coerceAtLeast(0.001f))
                         .fillMaxHeight()
                         .background(freeColor.copy(alpha = 0.3f))
                 )
@@ -474,45 +733,32 @@ private fun MultiSegmentStorageBar(
 
 @Composable
 private fun StorageBreakdownLegend(
-    appsBytes: Long,
-    mediaBytes: Long,
-    otherBytes: Long,
-    freeBytes: Long,
-    totalBytes: Long
+    categories: StorageCategories
 ) {
-    val appsColor = Color(0xFF4CAF50)
-    val mediaColor = Color(0xFFF44336)
-    val otherColor = Color(0xFF2196F3)
-    val freeColor = Color(0xFF9E9E9E)
-    
-    Row(
+    val legendItems = listOf(
+        Triple("Apps", categories.appsBytes + categories.appDataBytes + categories.cacheBytes, Color(0xFF2196F3)),
+        Triple("Media", categories.mediaBytes, Color(0xFFE91E63)),
+        Triple("Files", categories.filesBytes, Color(0xFF00BCD4)),
+        Triple("System", categories.systemBytes, Color(0xFF607D8B)),
+        Triple("Free", categories.freeBytes, Color(0xFF9E9E9E))
+    ).filter { (_, size, _) -> size > 0L }
+
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Apps
-        LegendItem(
-            color = appsColor,
-            label = "Apps",
-            size = appsBytes
-        )
-        // Media
-        LegendItem(
-            color = mediaColor,
-            label = "Media",
-            size = mediaBytes
-        )
-        // Other
-        LegendItem(
-            color = otherColor,
-            label = "Files",
-            size = otherBytes
-        )
-        // Free
-        LegendItem(
-            color = freeColor,
-            label = "Free",
-            size = freeBytes
-        )
+        legendItems.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                rowItems.forEach { (label, size, color) ->
+                    Box(modifier = Modifier.weight(1f, fill = false)) {
+                        LegendItem(color = color, label = label, size = size)
+                    }
+                }
+            }
+        }
     }
 }
 

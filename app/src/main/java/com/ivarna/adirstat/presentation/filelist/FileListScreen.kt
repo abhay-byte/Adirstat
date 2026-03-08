@@ -1,6 +1,8 @@
 package com.ivarna.adirstat.presentation.filelist
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -24,11 +27,11 @@ import java.util.*
 fun FileListScreen(
     volumePath: String,
     onNavigateBack: () -> Unit,
-    onNavigateToFolder: ((String) -> Unit)? = null,
+    onNavigateToSearch: (() -> Unit)? = null,
     viewModel: FileListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedFile by remember { mutableStateOf<FileNode.File?>(null) }
+    var selectedNode by remember { mutableStateOf<FileNode?>(null) }
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
     
@@ -36,26 +39,51 @@ fun FileListScreen(
         viewModel.loadFiles(volumePath)
     }
     
-    // Handle file selection for bottom sheet
-    fun onFileClick(file: FileNode) {
-        if (file is FileNode.File) {
-            selectedFile = file
-            showBottomSheet = true
-        } else if (file is FileNode.Directory && onNavigateToFolder != null) {
-            onNavigateToFolder(file.path)
+    BackHandler(enabled = uiState.navigationStack.isNotEmpty()) {
+        if (!viewModel.navigateBack()) {
+            onNavigateBack()
         }
+    }
+
+    fun onItemClick(file: FileNode) {
+        when (file) {
+            is FileNode.Directory -> viewModel.navigateInto(file)
+            is FileNode.File -> {
+                selectedNode = file
+                showBottomSheet = true
+            }
+        }
+    }
+
+    fun onItemLongPress(file: FileNode) {
+        selectedNode = file
+        showBottomSheet = true
     }
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Files") },
+                title = {
+                    val currentTitle = uiState.currentDirectory?.name?.ifBlank { "Files" } ?: "Files"
+                    Text(
+                        if (uiState.currentDirectory?.isVirtual == true) "🔒 $currentTitle" else currentTitle
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = {
+                        if (!viewModel.navigateBack()) {
+                            onNavigateBack()
+                        }
+                    }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
+                    if (onNavigateToSearch != null) {
+                        IconButton(onClick = onNavigateToSearch) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        }
+                    }
                     var showSortMenu by remember { mutableStateOf(false) }
                     IconButton(onClick = { showSortMenu = true }) {
                         Icon(Icons.Default.Sort, contentDescription = "Sort")
@@ -182,7 +210,8 @@ fun FileListScreen(
                         ) { file ->
                             FileListItem(
                                 file = file,
-                                onClick = { onFileClick(file) }
+                                onClick = { onItemClick(file) },
+                                onLongPress = { onItemLongPress(file) }
                             )
                         }
                     }
@@ -191,13 +220,13 @@ fun FileListScreen(
         }
         
         // Bottom sheet for file details
-        if (showBottomSheet && selectedFile != null) {
+        if (showBottomSheet && selectedNode != null) {
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
                 sheetState = sheetState
             ) {
                 FileDetailBottomSheet(
-                    file = selectedFile!!,
+                    file = selectedNode!!,
                     onDismiss = { showBottomSheet = false }
                 )
             }
@@ -208,7 +237,8 @@ fun FileListScreen(
 @Composable
 private fun FileListItem(
     file: FileNode,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongPress: () -> Unit
 ) {
     val isDirectory = file is FileNode.Directory
     
@@ -216,6 +246,9 @@ private fun FileListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .pointerInput(file.path) {
+                detectTapGestures(onLongPress = { onLongPress() })
+            }
     ) {
         Row(
             modifier = Modifier
@@ -226,12 +259,12 @@ private fun FileListItem(
             Icon(
                 imageVector = when (file) {
                     is FileNode.File -> getFileIcon(file.extension)
-                    is FileNode.Directory -> Icons.Default.Folder
+                    is FileNode.Directory -> if (file.isVirtual) Icons.Default.Android else Icons.Default.Folder
                 },
                 contentDescription = null,
                 tint = when (file) {
                     is FileNode.File -> getFileColor(file.extension)
-                    is FileNode.Directory -> androidx.compose.ui.graphics.Color(0xFF5C7A99)
+                    is FileNode.Directory -> if (file.isVirtual) androidx.compose.ui.graphics.Color(0xFF3F51B5) else androidx.compose.ui.graphics.Color(0xFF5C7A99)
                 },
                 modifier = Modifier.size(40.dp)
             )
@@ -245,8 +278,27 @@ private fun FileListItem(
                     fontWeight = FontWeight.Medium,
                     maxLines = 1
                 )
-                
-                if (file is FileNode.File) {
+
+                when {
+                    file.isVirtual -> {
+                        Text(
+                            text = file.virtualLabel ?: "Protected app storage",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                    file is FileNode.File -> {
+                        Text(
+                            text = file.path,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                if (file is FileNode.Directory && !file.isVirtual) {
                     Text(
                         text = file.path,
                         style = MaterialTheme.typography.bodySmall,
@@ -258,7 +310,7 @@ private fun FileListItem(
             
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = FileSizeFormatter.format(file.size),
+                    text = FileSizeFormatter.format(file.sizeBytes),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -311,7 +363,7 @@ private fun formatDate(timestamp: Long): String {
 
 @Composable
 private fun FileDetailBottomSheet(
-    file: FileNode.File,
+    file: FileNode,
     onDismiss: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -326,9 +378,15 @@ private fun FileDetailBottomSheet(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = getFileIcon(file.extension),
+                imageVector = when (file) {
+                    is FileNode.File -> getFileIcon(file.extension)
+                    is FileNode.Directory -> if (file.isVirtual) Icons.Default.Android else Icons.Default.Folder
+                },
                 contentDescription = null,
-                tint = getFileColor(file.extension),
+                tint = when (file) {
+                    is FileNode.File -> getFileColor(file.extension)
+                    is FileNode.Directory -> if (file.isVirtual) androidx.compose.ui.graphics.Color(0xFF3F51B5) else androidx.compose.ui.graphics.Color(0xFF5C7A99)
+                },
                 modifier = Modifier.size(48.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -339,7 +397,7 @@ private fun FileDetailBottomSheet(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = FileSizeFormatter.format(file.size),
+                    text = FileSizeFormatter.format(file.sizeBytes),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -350,12 +408,12 @@ private fun FileDetailBottomSheet(
         
         // File details
         Text(
-            text = file.path,
+            text = if (file.isVirtual) (file.virtualLabel ?: file.path) else file.path,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
-        if (file.lastModified > 0) {
+        if (file is FileNode.File && file.lastModified > 0) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Modified: ${formatDate(file.lastModified)}",
@@ -367,74 +425,88 @@ private fun FileDetailBottomSheet(
         Spacer(modifier = Modifier.height(24.dp))
         
         // Action buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            // Open button
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+        if (file.isVirtual) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = MaterialTheme.shapes.medium
             ) {
-                IconButton(
-                    onClick = {
-                        FileActions.openFile(context, file.path)
-                        onDismiss()
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.OpenInNew,
-                        contentDescription = "Open",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
                 Text(
-                    text = "Open",
-                    style = MaterialTheme.typography.labelSmall
+                    text = "Protected app-storage summary. You can drill into this item from the list, but it remains read-only.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(12.dp)
                 )
             }
-            
-            // Share button
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                IconButton(
-                    onClick = {
-                        FileActions.shareFile(context, file.path)
-                        onDismiss()
-                    }
+                // Open button
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = "Share",
-                        tint = MaterialTheme.colorScheme.primary
+                    IconButton(
+                        onClick = {
+                            FileActions.openFile(context, file.path)
+                            onDismiss()
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.OpenInNew,
+                            contentDescription = "Open",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = "Open",
+                        style = MaterialTheme.typography.labelSmall
                     )
                 }
-                Text(
-                    text = "Share",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-            
-            // Delete button
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                IconButton(
-                    onClick = {
-                        FileActions.deleteFile(context, file.path)
-                        onDismiss()
-                    }
+
+                // Share button
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error
+                    IconButton(
+                        onClick = {
+                            FileActions.shareFile(context, file.path)
+                            onDismiss()
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = "Share",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Text(
+                        text = "Share",
+                        style = MaterialTheme.typography.labelSmall
                     )
                 }
-                Text(
-                    text = "Delete",
-                    style = MaterialTheme.typography.labelSmall
-                )
+
+                // Delete button
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    IconButton(
+                        onClick = {
+                            FileActions.deleteFile(context, file.path)
+                            onDismiss()
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    Text(
+                        text = "Delete",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
             }
         }
         

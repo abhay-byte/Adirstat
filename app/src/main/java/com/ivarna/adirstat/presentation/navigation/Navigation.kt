@@ -52,6 +52,9 @@ fun AdirstatNavHost(
                 onNavigateToTreemap = { path ->
                     navController.navigate(Screen.Treemap.createRoute(path))
                 },
+                onNavigateToSearch = {
+                    navController.navigate(Screen.Search.route)
+                },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 }
@@ -68,8 +71,11 @@ fun AdirstatNavHost(
             com.ivarna.adirstat.presentation.treemap.TreemapScreen(
                 volumePath = volumePath,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToFileList = {
-                    navController.navigate(Screen.FileList.createRoute(volumePath))
+                onNavigateToSearch = {
+                    navController.navigate(Screen.Search.route)
+                },
+                onNavigateToFileList = { path ->
+                    navController.navigate(Screen.FileList.createRoute(path))
                 }
             )
         }
@@ -84,9 +90,8 @@ fun AdirstatNavHost(
             com.ivarna.adirstat.presentation.filelist.FileListScreen(
                 volumePath = volumePath,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToFolder = { folderPath ->
-                    // Navigate to treemap with the folder path
-                    navController.navigate(Screen.Treemap.createRoute(folderPath))
+                onNavigateToSearch = {
+                    navController.navigate(Screen.Search.route)
                 }
             )
         }
@@ -117,7 +122,10 @@ fun AdirstatNavHost(
         
         composable(Screen.Search.route) {
             com.ivarna.adirstat.presentation.search.SearchScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDirectory = { path ->
+                    navController.navigate(Screen.FileList.createRoute(path))
+                }
             )
         }
     }

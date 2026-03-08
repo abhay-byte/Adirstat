@@ -1,7 +1,7 @@
 package com.ivarna.adirstat.domain.usecase
 
 import com.ivarna.adirstat.data.source.ScanProgress
-import com.ivarna.adirstat.data.source.StorageBreakdown
+import com.ivarna.adirstat.data.source.StorageCategories
 import com.ivarna.adirstat.data.source.StorageVolume
 import com.ivarna.adirstat.domain.model.FileNode
 import com.ivarna.adirstat.domain.repository.StorageRepository
@@ -34,8 +34,7 @@ class ScanStorageUseCase @Inject constructor(
     fun scanVolume(
         volumePath: String,
         excludedPaths: List<String> = emptyList(),
-        minFileSize: Long = 0,
-        addVirtualNodes: Boolean = true
+        minFileSize: Long = 0
     ): Flow<Result<ScanState>> {
         return repository.scanVolume(volumePath, excludedPaths, minFileSize)
             .map { progress ->
@@ -60,15 +59,9 @@ class ScanStorageUseCase @Inject constructor(
                     is ScanProgress.Complete -> {
                         val rootNode = progress.rootNode
                         if (rootNode is FileNode.Directory) {
-                            // Add virtual Android/data and Android/obb nodes if requested
-                            val enhancedRoot = if (addVirtualNodes) {
-                                addVirtualStorageNodes(rootNode, volumePath)
-                            } else {
-                                rootNode
-                            }
                             Result.success(
                                 ScanState.Complete(
-                                    rootNode = enhancedRoot,
+                                    rootNode = rootNode,
                                     totalFiles = progress.totalFiles,
                                     totalSize = progress.totalSize,
                                     durationMs = progress.durationMs
@@ -90,78 +83,13 @@ class ScanStorageUseCase @Inject constructor(
                 emit(Result.failure(e))
             }
     }
-    
-    /**
-     * Add virtual Android/data and Android/obb nodes to the file tree.
-     * These directories are restricted on Android 11+ and cannot be scanned directly.
-     * We use StorageStatsManager to estimate their sizes.
-     */
-    private suspend fun addVirtualStorageNodes(
-        rootNode: FileNode.Directory,
-        volumePath: String
-    ): FileNode.Directory {
-        // Get storage breakdown to estimate Android/data and obb sizes
-        val breakdown = try {
-            repository.getStorageBreakdown(volumePath)
-        } catch (e: Exception) {
-            null
-        }
-        
-        // Estimate Android/data size (usually includes app data and cache)
-        // We'll use a portion of the "apps" bytes as an estimate
-        val estimatedAppsBytes = breakdown?.appsBytes ?: 0L
-        
-        // Create virtual Android/data directory
-        val androidDataNode = FileNode.Directory(
-            name = "Android",
-            path = "$volumePath/Android",
-            children = listOf(
-                // Android/data subdirectory
-                FileNode.Directory(
-                    name = "data",
-                    path = "$volumePath/Android/data",
-                    children = emptyList(),
-                    size = estimatedAppsBytes / 2, // Estimate half for data
-                    lastModified = System.currentTimeMillis(),
-                    isRestricted = true
-                ),
-                // Android/obb subdirectory
-                FileNode.Directory(
-                    name = "obb",
-                    path = "$volumePath/Android/obb",
-                    children = emptyList(),
-                    size = estimatedAppsBytes / 2, // Estimate half for obb
-                    lastModified = System.currentTimeMillis(),
-                    isRestricted = true
-                )
-            ),
-            size = estimatedAppsBytes,
-            lastModified = System.currentTimeMillis(),
-            isRestricted = true
-        )
-        
-        // Add virtual node to the root's children
-        val updatedChildren = rootNode.children + androidDataNode
-        
-        // Return updated root with increased total size
-        return rootNode.copy(
-            children = updatedChildren,
-            size = rootNode.size + estimatedAppsBytes
-        )
-    }
 
     /**
      * Get cached scan result if available
      */
-    suspend fun getCachedScan(volumePath: String, addVirtualNodes: Boolean = true): Result<FileNode.Directory?> {
+    suspend fun getCachedScan(volumePath: String): Result<FileNode.Directory?> {
         return try {
-            val cached = repository.getCachedScan(volumePath)
-            val enhanced = if (addVirtualNodes && cached != null) {
-                addVirtualStorageNodes(cached, volumePath)
-            } else {
-                cached
-            }
-            Result.success(enhanced)
+            Result.success(repository.getCachedScan(volumePath))
         } catch (e: Exception) {
             Result.failure(e)
         }

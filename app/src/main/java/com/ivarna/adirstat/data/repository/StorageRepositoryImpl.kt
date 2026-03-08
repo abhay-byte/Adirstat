@@ -4,10 +4,11 @@ import com.google.gson.Gson
 import com.ivarna.adirstat.data.local.db.ScanCacheDao
 import com.ivarna.adirstat.data.local.db.ScanCacheEntity
 import com.ivarna.adirstat.data.source.AppStatsDataSource
-import com.ivarna.adirstat.data.source.AppStorageInfo
+import com.ivarna.adirstat.data.source.AppStorageInfoBytes
 import com.ivarna.adirstat.data.source.FileSystemDataSource
+import com.ivarna.adirstat.data.source.MediaStoreDataSource
 import com.ivarna.adirstat.data.source.ScanProgress
-import com.ivarna.adirstat.data.source.StorageBreakdown
+import com.ivarna.adirstat.data.source.StorageCategories
 import com.ivarna.adirstat.data.source.StorageStatsDataSource
 import com.ivarna.adirstat.data.source.StorageVolume
 import com.ivarna.adirstat.data.source.StorageVolumeDataSource
@@ -26,6 +27,7 @@ class StorageRepositoryImpl @Inject constructor(
     private val fileSystemDataSource: FileSystemDataSource,
     private val storageVolumeDataSource: StorageVolumeDataSource,
     private val appStatsDataSource: AppStatsDataSource,
+    private val mediaStoreDataSource: MediaStoreDataSource,
     private val storageStatsDataSource: StorageStatsDataSource,
     private val scanCacheDao: ScanCacheDao,
     private val gson: Gson
@@ -77,12 +79,32 @@ class StorageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAppsWithStorageStats(): List<AppStorageInfo> {
-        return appStatsDataSource.getAllAppsWithStorageStats()
+    override suspend fun getAppsWithStorageStats(): List<AppStorageInfoBytes> {
+        return appStatsDataSource.getAllAppsWithStorageStats().map {
+            AppStorageInfoBytes(
+                packageName = it.packageName,
+                appName = it.appName,
+                apkBytes = it.apkSize,
+                dataBytes = it.dataSize,
+                cacheBytes = it.cacheSize,
+                totalBytes = it.totalSize,
+                isSystemApp = it.isSystemApp
+            )
+        }
     }
 
-    override suspend fun getTopApps(count: Int): List<AppStorageInfo> {
-        return appStatsDataSource.getTopAppsByStorage(count)
+    override suspend fun getTopApps(count: Int): List<AppStorageInfoBytes> {
+        return appStatsDataSource.getTopAppsByStorage(count).map {
+            AppStorageInfoBytes(
+                packageName = it.packageName,
+                appName = it.appName,
+                apkBytes = it.apkSize,
+                dataBytes = it.dataSize,
+                cacheBytes = it.cacheSize,
+                totalBytes = it.totalSize,
+                isSystemApp = it.isSystemApp
+            )
+        }
     }
 
     override suspend fun deleteFile(filePath: String): Boolean = withContext(Dispatchers.IO) {
@@ -111,7 +133,39 @@ class StorageRepositoryImpl @Inject constructor(
         }
     }
     
-    override suspend fun getStorageBreakdown(volumePath: String): StorageBreakdown {
-        return storageStatsDataSource.getStorageBreakdown(volumePath)
+    override suspend fun getStorageBreakdown(volumePath: String): StorageCategories {
+        val cachedScan = getCachedScan(volumePath)
+        val appStats = getAppsWithStorageStats()
+        val mediaTotals = try {
+            mediaStoreDataSource.getMediaTotals()
+        } catch (e: Exception) {
+            MediaStoreDataSource.MediaTotals(0L, 0, 0L, 0, 0L, 0)
+        }
+        return storageStatsDataSource.computeStorageCategories(
+            filesystemBytes = cachedScan?.size ?: 0L,
+            appStats = appStats,
+            mediaTotals = mediaTotals
+        )
+    }
+    
+    override suspend fun getLastScanResult(): FileNode.Directory? = withContext(Dispatchers.IO) {
+        try {
+            // Get the most recent scan from the cache
+            val defaultPath = "/storage/emulated/0"
+            getCachedScan(defaultPath)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    override suspend fun getLastScanTimestamp(): Long = withContext(Dispatchers.IO) {
+        try {
+            // Get timestamp from scan history or cache
+            val defaultPath = "/storage/emulated/0"
+            val cached = getCachedScan(defaultPath)
+            cached?.lastModified ?: 0L
+        } catch (e: Exception) {
+            0L
+        }
     }
 }

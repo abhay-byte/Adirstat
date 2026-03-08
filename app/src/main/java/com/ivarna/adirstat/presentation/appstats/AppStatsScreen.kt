@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.ivarna.adirstat.data.source.AppStorageInfo
+import com.ivarna.adirstat.data.source.InstalledAppStorageInfo
 import com.ivarna.adirstat.util.FileSizeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,7 +163,7 @@ private fun StorageSummaryItem(
 
 @Composable
 private fun AppStorageItem(
-    app: AppStorageInfo,
+    app: InstalledAppStorageInfo,
     onClick: () -> Unit
 ) {
     Card(

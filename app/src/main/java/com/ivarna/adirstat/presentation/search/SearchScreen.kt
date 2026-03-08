@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
+import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
 import java.text.SimpleDateFormat
 import java.util.*
@@ -22,9 +23,13 @@ import java.util.*
 @Composable
 fun SearchScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToDirectory: (String) -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedNode by remember { mutableStateOf<FileNode?>(null) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     
     Scaffold(
         topBar = {
@@ -33,7 +38,7 @@ fun SearchScreen(
                     OutlinedTextField(
                         value = uiState.query,
                         onValueChange = { viewModel.search(it) },
-                        placeholder = { Text("Search files...") },
+                        placeholder = { Text("Search files and apps...") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -179,11 +184,42 @@ fun SearchScreen(
                         ) { file ->
                             SearchResultItem(
                                 file = file,
-                                onClick = { /* Open file details */ }
+                                onClick = {
+                                    when (file) {
+                                        is FileNode.Directory -> onNavigateToDirectory(file.path)
+                                        is FileNode.File -> {
+                                            selectedNode = file
+                                            showBottomSheet = true
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
                 }
+            }
+        }
+
+        if (showBottomSheet && selectedNode != null) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false }
+            ) {
+                SearchResultBottomSheet(
+                    node = selectedNode!!,
+                    onDismiss = { showBottomSheet = false },
+                    onBrowse = { path ->
+                        showBottomSheet = false
+                        onNavigateToDirectory(path)
+                    },
+                    onOpen = { path ->
+                        FileActions.openFile(context, path)
+                        showBottomSheet = false
+                    },
+                    onShare = { path ->
+                        FileActions.shareFile(context, path)
+                        showBottomSheet = false
+                    }
+                )
             }
         }
     }
@@ -234,6 +270,20 @@ private fun SearchResultItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
+                } else if (file.isVirtual) {
+                    Text(
+                        text = file.virtualLabel ?: file.path,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                } else {
+                    Text(
+                        text = file.path,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
                 }
             }
             
@@ -251,6 +301,85 @@ private fun SearchResultItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultBottomSheet(
+    node: FileNode,
+    onDismiss: () -> Unit,
+    onBrowse: (String) -> Unit,
+    onOpen: (String) -> Unit,
+    onShare: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = node.name,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = FileSizeFormatter.format(node.sizeBytes),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = node.virtualLabel ?: node.path,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        when (node) {
+            is FileNode.Directory -> {
+                Button(
+                    onClick = { onBrowse(node.path) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.FolderOpen, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Browse here")
+                }
+            }
+            is FileNode.File -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { onBrowse(node.path.substringBeforeLast('/', "")) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Show folder")
+                    }
+                    Button(
+                        onClick = { onOpen(node.path) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Open")
+                    }
+                }
+                OutlinedButton(
+                    onClick = { onShare(node.path) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Share")
+                }
+            }
+        }
+
+        TextButton(
+            onClick = onDismiss,
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text("Close")
         }
     }
 }

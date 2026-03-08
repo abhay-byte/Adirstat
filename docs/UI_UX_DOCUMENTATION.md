@@ -81,25 +81,27 @@ This document provides detailed specifications for all 13 screens in Adirstat.
 
 ### Layout
 - **Top App Bar:** Title "Adirstat" + Search icon + Settings icon
-- **Content:** Scrollable list of partition cards
+- **Content:** Scrollable list with a dedicated Internal Storage spotlight section followed by other partition cards
 - **Bottom Navigation:** Dashboard | Apps | History | Settings
 
 ### Partition Card Components
 | Component | Description |
 |-----------|-------------|
-| Partition Icon | Internal: `memory`, SD: `sd_card`, OTG: `usb` |
+| Partition Icon | Internal: `sd_card`, SD: `sd_card`, OTG: `usb` |
 | Title | "Internal Storage", "SD Card", "USB Drive" |
-| Multi-Segment Usage Bar | Horizontal bar showing Apps (green) / Media (red) / Files (blue) / Free (grey) |
+| Multi-Segment Usage Bar | Horizontal bar showing Apps / Data / Cache / Images / Video / Audio / Files / System / Free |
 | Stats Row | "XX.X GB used of YY.Y GB" + "ZZ.Z GB free" |
-| Breakdown Legend | Color-coded legend: Apps, Media, Files, Free |
+| Spotlight Pills | Quick summary pills for Apps, Media, and Files inside the internal-storage section |
+| Breakdown Legend | Color-coded legend: Apps, Media, Files, System, Free |
 | Last Scan | "Last scanned: [relative time]" or "Never scanned" |
-| Scan Button | TextButton "Scan" or "Rescan" |
+| Scan Action | Use only the bottom-right `Scan Storage` FAB |
 
 ### Multi-Segment Storage Bar
 The Dashboard displays a multi-segment storage bar that shows the breakdown of storage usage:
-- **Apps (Green):** App data and cache from StorageStatsManager
-- **Media (Red):** Media files from File API scan
-- **Files (Blue):** Other user files from File API scan
+- **Apps / Data / Cache:** APK, app data, and cache from `StorageStatsManager`
+- **Images / Video / Audio:** Media totals from `MediaStore`
+- **Files (Cyan):** Real filesystem bytes from the cached scan
+- **System (Blue-grey):** Remaining used partition bytes not directly visible to file scan
 - **Free (Grey):** Available storage
 
 > **Note:** The "Apps" segment shows storage from `Android/data` and `Android/obb` directories which are restricted by Android 11+ and cannot be scanned via File API. These values come from `StorageStatsManager`.
@@ -108,14 +110,21 @@ The Dashboard displays a multi-segment storage bar that shows the breakdown of s
 If no partitions found (rare): "No storage volumes detected"
 
 ### FAB
-- Single FAB at bottom-right: "Scan All"
-- Scans all partitions sequentially
+- Single FAB at bottom-right: "Scan Storage"
+- Starts the internal-storage scan
 
 ### Interactions
-- Tap partition card → Navigate to Scan Progress → Treemap
+- Tap scanned partition card → Open Treemap
+- Tap never-scanned partition card → No action; user must use FAB first
 - Tap search icon → Navigate to Search Screen
 - Tap settings → Navigate to Settings Screen
-- Tap Scan All FAB → Scan all partitions
+- Tap Scan Storage FAB → Start scan
+
+### Internal Storage Spotlight
+- The first section is visually emphasized as the device's main storage area
+- Shows total capacity, used/free summary chips, and app/media/file quick pills
+- If a scan exists, the whole spotlight opens the storage map
+- If no scan exists, the spotlight explains that the FAB must be used first
 
 ---
 
@@ -156,10 +165,11 @@ If no partitions found (rare): "No storage volumes detected"
 ### Layout
 - **Top App Bar:**
   - Back button
-  - Breadcrumb navigation: "Home > Downloads > Videos"
-  - Search icon
+  - Dynamic title: `Storage` at root, folder/app name when drilled in
+  - Actions: Search / Expand / Treemap / List / Open Full List / Refresh
 - **Main Area:** Full-screen treemap (Canvas)
-- **Bottom Sheet (on tap):** File/folder details + actions
+- **Bottom Sheet (long-press or file tap):** File/folder details + actions
+- **Info Bar:** Shows true partition used bytes at root; current folder/app size when drilled in
 
 ### Treemap Specifications
 - **Algorithm:** Squarified Treemap
@@ -178,28 +188,49 @@ If no partitions found (rare): "No storage volumes detected"
 | Actions Row | [Details] [Share] [Delete] |
 
 ### Breadcrumb
-- Shows current depth: Home > Downloads > Videos
+- Hidden at root level
+- Shows current depth: Storage > Download > Brotato
 - Tapping any segment navigates up to that level
-- Long-press shows "Go to root" option
+- Current segment is non-clickable
 
 ### Gestures
-- Tap: Open bottom sheet
-- Double-tap on folder: Drill into folder
-- Long-press: Quick action menu
+- Tap directory block: Drill into folder or virtual app node
+- Tap file block: Open bottom sheet
+- Long-press: Show bottom sheet
 - Pinch: Zoom in/out
 - Two-finger pan: Navigate treemap when zoomed
 
 ### Interactions
-- Tap block → Bottom sheet with details
+- Tap real folder block → Navigate deeper
+- Tap virtual app block → Show `APK / Data / Cache` sub-blocks
+- Tap file block → Bottom sheet with details
 - Tap breadcrumb → Navigate up
 - Tap search → Navigate to Search Screen
 
-### Virtual Android/data Nodes
-The treemap may display virtual nodes representing `Android/data` and `Android/obb` directories. These are shown because:
-- Since Android 11, these directories are inaccessible via File API
-- Their sizes are obtained from `StorageStatsManager`
-- They appear as special nodes with a lock icon indicator
-- Tapping shows: "This folder's contents are protected by Android. Sizes shown are from system APIs."
+### Virtual App Data Nodes
+The treemap displays a second root-level layer of virtual app nodes sourced from `StorageStatsManager`:
+
+- One virtual node per app above 1 MB
+- Label format: `🔒 App Name (App Data)`
+- Visual treatment: semi-transparent fill + diagonal stripe texture
+- Drill-down shows `APK`, `Data`, and `Cache`
+- Virtual nodes are read-only, but they now appear in list/search browsing as read-only folders with the same drill-down
+
+### Root-Level Treemap Composition
+The treemap root combines two sources:
+
+| Category | Description | Source |
+|----------|-------------|--------|
+| **Real folders** | Download, Android, DCIM, Pictures, etc. | File scan |
+| **Virtual app nodes** | Protected app storage with APK/Data/Cache breakdown | StorageStatsManager |
+
+> **Note:** At root, the info bar shows true partition `usedBytes`. When drilled into a folder or virtual app node, it shows that node's own size.
+
+### Treemap Density Rules
+- Root level shows at most **20 named nodes + 1 `Others` node**
+- Nodes below the readable threshold are grouped into `Others` before drawing
+- Individual visible blocks should remain large enough to show at least one readable text line
+- Tapping `Others (N)` drills into the grouped children
 
 ---
 
@@ -244,10 +275,17 @@ The treemap may display virtual nodes representing `Android/data` and `Android/o
 | APKs | apk, xapk |
 
 ### Interactions
-- Tap item → Bottom sheet (same as treemap)
-- Long-press → Multi-select mode
+- Single tap on folder → Navigate into that folder
+- Single tap on file → Bottom sheet
+- Long-press on any row → Bottom sheet
+- System back inside a folder → Navigate to parent folder
 - Tap sort → Show dropdown
 - Tap filter chip → Apply filter
+
+### List/Treemap Toggle Behavior
+- Embedded list view inside Treemap now uses the full raw child list for the current level, so app-data virtual nodes are not dropped behind treemap grouping
+- Dedicated File List screen shows real folders plus virtual app-data folders at the root
+- Tapping a directory or virtual app folder in list view drills into it directly
 
 ---
 
@@ -390,7 +428,7 @@ The treemap may display virtual nodes representing `Android/data` and `Android/o
 
 ## 12. Search Screen
 
-**Purpose:** Global search across all scanned files.
+**Purpose:** Global search across all scanned files and virtual app-storage folders.
 
 ### Layout
 - **Search Bar:**
@@ -398,7 +436,7 @@ The treemap may display virtual nodes representing `Android/data` and `Android/o
   - Wildcard button (toggle)
   - Regex button (toggle)
 - **Filter Chips:** Type, Size range, Date range
-- **Results:** Same as File List items
+- **Results:** Same as File List items, including read-only virtual app folders
 
 ### Search Syntax
 | Syntax | Example | Description |
@@ -414,7 +452,8 @@ The treemap may display virtual nodes representing `Android/data` and `Android/o
 - **Date:** Date range picker
 
 ### Interactions
-- Tap result → Bottom sheet
+- Tap directory result → Open that directory in the File List screen
+- Tap file result → Bottom sheet with Open / Share / Show folder actions
 - Tap search → Keyboard appears, focus TextField
 
 ---

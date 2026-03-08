@@ -22,6 +22,7 @@ This document contains all tasks to be completed for Adirstat.
 | TASK-011 | Unit tests for ScanStorageUseCase | F-006 | 🔴 Not Started |
 | TASK-012 | Fastlane setup + all lanes | - | ✅ Complete |
 | TASK-013 | Google Play Permissions Declaration Form — document requirement for MANAGE_EXTERNAL_STORAGE and QUERY_ALL_PACKAGES | - | 🔴 Not Started |
+| TASK-014 | Complete app storage breakdown in treemap (F-037) - Apps category with APK/Data/Cache + individual apps | F-037 | ✅ Complete |
 
 ---
 

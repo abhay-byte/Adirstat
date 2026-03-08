@@ -11,7 +11,15 @@ This document tracks all completed tasks for Adirstat.
 | TASK-000 | Project documentation initialized | 2026-03-07 | Created all documentation files in /docs folder |
 | TASK-001 | Project scaffold (Hilt, Room, Compose, Navigation, DataStore setup) | 2026-03-07 | Android project with SDK 35/36, AGP 8.13.2, Kotlin 1.9.22, Hilt 2.50 |
 | TASK-012 | Fastlane setup + all lanes | 2026-03-07 | Created Appfile, Fastfile, Pluginfile, metadata, README |
+| TASK-014 | Complete app storage breakdown in treemap (F-037) | 2026-03-08 | Apps category with APK/Data/Cache + top 15 individual apps |
+| TASK-014 | Complete app storage breakdown in treemap (F-037) | 2026-03-08 | Apps category with APK/Data/Cache + top 15 individual apps |
 | TASK-CRASH | Crash Handler implementation | 2026-03-07 | CrashHandler + CrashActivity in separate process |
+
+## Pending Verification
+
+- Round 7 implementation is complete in code but remains in [progress/ONGOING.md](progress/ONGOING.md) until screenshot verification is captured.
+- Round 8 treemap fixes are complete in code but remain in [progress/ONGOING.md](progress/ONGOING.md) until screenshot verification is captured.
+- Round 9 dashboard/search/list improvements are complete in code but remain in [progress/ONGOING.md](progress/ONGOING.md) until screenshot verification is captured.
 
 ---
 

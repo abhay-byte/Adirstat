@@ -40,10 +40,10 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin | ✅ Complete |
-| F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.) | ✅ Complete |
+| F-013 | Squarified Treemap | Implement Ben Shneiderman's squarified treemap algorithm in pure Kotlin | 🟡 In Progress |
+| F-014 | Color by File Type | Color treemap blocks based on file category (images=green, video=red, etc.) | 🟡 In Progress |
 | F-015 | Tap to Drill Down | Navigate into folder when tapping its treemap block | ✅ Complete |
-| F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Home > Downloads > Videos) | ✅ Complete |
+| F-016 | Breadcrumb Navigation | Show current path as breadcrumbs (Home > Downloads > Videos) | 🟡 In Progress |
 | F-017 | Pinch-to-Zoom | Support pinch gestures to zoom treemap in/out | 🔴 Not Started |
 
 ---
@@ -53,9 +53,9 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
 | F-018 | Sortable File List | Display flat list sorted by size (default: largest first) | ✅ Complete |
-| F-019 | Sort Options | Sort by: size, name, date modified, extension (ascending/descending) | 🔴 Not Started |
-| F-020 | Filter by Extension/Size/Date | Allow filtering by file extension, size range slider, date range | 🔴 Not Started |
-| F-021 | Wildcard & Regex Search | Search with wildcards (*.mp4) and regex toggle | 🔴 Not Started |
+| F-019 | Sort Options | Sort by: size, name, date modified, extension (ascending/descending) | 🟡 In Progress |
+| F-020 | Filter by Extension/Size/Date | Allow filtering by file extension, size range slider, date range | 🟡 In Progress |
+| F-021 | Wildcard & Regex Search | Search with wildcards (*.mp4) and regex toggle | 🟡 In Progress |
 | F-022 | File Type Grouping | Show file type breakdown with percentage bars | ✅ Complete |
 
 ---
@@ -74,9 +74,10 @@ All features are grouped by module. Each feature has an ID (F-001 to F-035), nam
 
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
-| F-026 | List Installed Apps | Query all apps via QUERY_ALL_PACKAGES with APK/data/cache sizes from StorageStatsManager | 🟡 In Progress |
-| F-027 | App Size Sorting | Sort apps by total size, tap to open system App Info | 🟡 In Progress |
-| F-036 | Virtual Android/data Nodes | Display virtual nodes for Android/data and Android/obb with sizes from StorageStatsManager | 🟡 In Progress |
+| F-026 | Per-App Storage in Treemap | Show per-app protected storage as virtual nodes in treemap and list/search drill-down flows with APK/Data/Cache breakdown | 🟡 In Progress |
+| F-027 | Open App Info | Tap app storage entry to open system App Info | 🔴 Not Started |
+| F-036 | Virtual App Data Nodes | Display protected app-data nodes as virtual entries with lock styling and read-only drill-down | 🟡 In Progress |
+| F-037 | Virtual App Breakdown Drill-Down | Drill into a virtual app node to inspect APK/Data/Cache segments | 🟡 In Progress |
 
 ---
 

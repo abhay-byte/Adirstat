@@ -1,5 +1,6 @@
 package com.ivarna.adirstat.data.source
 
+import android.util.Log
 import android.os.Environment
 import com.ivarna.adirstat.domain.model.FileNode
 import kotlinx.coroutines.CoroutineScope
@@ -92,6 +93,13 @@ class FileSystemDataSource @Inject constructor() {
                     }
                 },
                 scope = scope
+            )
+        }
+
+        if (rootNode is FileNode.Directory) {
+            Log.d(
+                "ScanResult",
+                "Root children: ${rootNode.children.map { "${it.name}=${formatBytes(it.size)}" }}"
             )
         }
 
@@ -268,6 +276,13 @@ class FileSystemDataSource @Inject constructor() {
         if (file.isFile()) return file.length()
         
         return file.listFiles()?.sumOf { getDirectorySize(it) } ?: 0
+    }
+
+    private fun formatBytes(bytes: Long): String = when {
+        bytes >= 1_073_741_824L -> String.format("%.2fGB", bytes / 1_073_741_824.0)
+        bytes >= 1_048_576L -> String.format("%.2fMB", bytes / 1_048_576.0)
+        bytes >= 1_024L -> String.format("%.2fKB", bytes / 1_024.0)
+        else -> "$bytes B"
     }
 }
 

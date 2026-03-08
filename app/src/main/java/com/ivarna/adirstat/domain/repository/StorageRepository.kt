@@ -1,8 +1,8 @@
 package com.ivarna.adirstat.domain.repository
 
-import com.ivarna.adirstat.data.source.AppStorageInfo
+import com.ivarna.adirstat.data.source.AppStorageInfoBytes
 import com.ivarna.adirstat.data.source.ScanProgress
-import com.ivarna.adirstat.data.source.StorageBreakdown
+import com.ivarna.adirstat.data.source.StorageCategories
 import com.ivarna.adirstat.data.source.StorageVolume
 import com.ivarna.adirstat.domain.model.FileNode
 import kotlinx.coroutines.flow.Flow
@@ -39,12 +39,12 @@ interface StorageRepository {
     /**
      * Get all apps with storage stats
      */
-    suspend fun getAppsWithStorageStats(): List<AppStorageInfo>
+    suspend fun getAppsWithStorageStats(): List<AppStorageInfoBytes>
     
     /**
      * Get top N apps by storage usage
      */
-    suspend fun getTopApps(count: Int): List<AppStorageInfo>
+    suspend fun getTopApps(count: Int): List<AppStorageInfoBytes>
     
     /**
      * Delete a file
@@ -60,5 +60,17 @@ interface StorageRepository {
      * Get comprehensive storage breakdown for a volume
      * Includes apps, media, and other breakdown from StorageStatsManager
      */
-    suspend fun getStorageBreakdown(volumePath: String): StorageBreakdown
+    suspend fun getStorageBreakdown(volumePath: String): StorageCategories
+    
+    /**
+     * Get the most recent scan result (for dashboard display)
+     * Returns null if no scan has been performed
+     */
+    suspend fun getLastScanResult(): FileNode.Directory?
+    
+    /**
+     * Get the timestamp of the last scan
+     * Returns 0 if no scan has been performed
+     */
+    suspend fun getLastScanTimestamp(): Long
 }

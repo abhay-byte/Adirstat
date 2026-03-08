@@ -1,8 +1,5 @@
 package com.ivarna.adirstat.util
 
-import android.Manifest
-import android.app.Activity
-import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,340 +8,138 @@ import android.os.Build
 import android.os.Environment
 import android.os.Process
 import android.provider.Settings
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-/**
- * PermissionManager handles all Android permission requests across API levels.
- * 
- * Key permissions:
- * - READ_EXTERNAL_STORAGE (API < 33)
- * - MANAGE_EXTERNAL_STORAGE (API 30+) - Required for full file access
- * - READ_MEDIA_IMAGES/VIDEO/AUDIO (API 33+)
- * - PACKAGE_USAGE_STATS - For per-app storage breakdown
- * - QUERY_ALL_PACKAGES - For listing all installed apps
- */
-class PermissionManager(private val context: Context) {
+@Singleton
+class PermissionManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
-    companion object {
-        const val REQUEST_CODE_READ_STORAGE = 100
-        const val REQUEST_CODE_MANAGE_STORAGE = 101
-        const val REQUEST_CODE_MEDIA_PERMISSIONS = 102
-        const val REQUEST_CODE_PACKAGE_USAGE = 103
+    data class PermissionStatus(
+        val hasAllFilesAccess: Boolean,        // MANAGE_EXTERNAL_STORAGE (API 30+) or READ_EXTERNAL_STORAGE (API < 30)
+        val hasUsageStatsAccess: Boolean,      // PACKAGE_USAGE_STATS via AppOpsManager
+        val hasMediaImagesAccess: Boolean,     // READ_MEDIA_IMAGES (API 33+)
+        val hasMediaVideoAccess: Boolean,      // READ_MEDIA_VIDEO (API 33+)
+        val hasMediaAudioAccess: Boolean       // READ_MEDIA_AUDIO (API 33+)
+    ) {
+        val hasAnyStorageAccess: Boolean get() = hasAllFilesAccess ||
+            hasMediaImagesAccess || hasMediaVideoAccess || hasMediaAudioAccess
+        val isFullyConfigured: Boolean get() = hasAllFilesAccess && hasUsageStatsAccess
     }
 
-    // Permission states
-    private val _permissionState = MutableStateFlow(PermissionState())
-    val permissionState: StateFlow<PermissionState> = _permissionState.asStateFlow()
-
     /**
-     * Check all required permissions and return current state
+     * Check ALL permission states. Call this:
+     * 1. On app start
+     * 2. Every time onResume fires (user may have granted in Settings and returned)
+     * 3. Before any scan
      */
-    fun checkAllPermissions(): PermissionState {
-        val state = PermissionState(
-            hasReadStorage = hasReadStoragePermission(),
-            hasManageExternalStorage = hasManageExternalStoragePermission(),
-            hasMediaPermissions = hasMediaPermissions(),
-            hasPackageUsageStats = hasPackageUsageStatsPermission(),
-            hasQueryAllPackages = hasQueryAllPackagesPermission()
+    fun checkAllPermissions(): PermissionStatus {
+        return PermissionStatus(
+            hasAllFilesAccess = checkAllFilesAccess(),
+            hasUsageStatsAccess = checkUsageStatsAccess(),
+            hasMediaImagesAccess = checkMediaPermission(android.Manifest.permission.READ_MEDIA_IMAGES),
+            hasMediaVideoAccess = checkMediaPermission(android.Manifest.permission.READ_MEDIA_VIDEO),
+            hasMediaAudioAccess = checkMediaPermission(android.Manifest.permission.READ_MEDIA_AUDIO),
         )
-        _permissionState.value = state
-        return state
     }
 
     /**
-     * API 29 and below: Request READ_EXTERNAL_STORAGE
+     * Check MANAGE_EXTERNAL_STORAGE (API 30+) or READ_EXTERNAL_STORAGE (API < 30).
+     *
+     * CRITICAL: Do NOT use ContextCompat.checkSelfPermission() for MANAGE_EXTERNAL_STORAGE.
+     * It always returns DENIED. Use Environment.isExternalStorageManager() instead.
      */
-    fun requestReadStoragePermission(activity: Activity) {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-            ActivityCompat.requestPermissions(
-                activity,
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-                REQUEST_CODE_READ_STORAGE
-            )
-        }
-    }
-
-    /**
-     * API 30-32: Request MANAGE_EXTERNAL_STORAGE via Settings
-     */
-    fun requestManageExternalStoragePermission(activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && 
-            Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                data = Uri.parse("package:${context.packageName}")
-            }
-            activity.startActivityForResult(intent, REQUEST_CODE_MANAGE_STORAGE)
-        }
-    }
-
-    /**
-     * Alternative: Request MANAGE_EXTERNAL_STORAGE via Settings (for API 30+)
-     */
-    fun requestManageExternalStoragePermissionViaSettings(activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-            activity.startActivityForResult(intent, REQUEST_CODE_MANAGE_STORAGE)
-        }
-    }
-
-    /**
-     * API 33+: Request granular media permissions
-     */
-    fun requestMediaPermissions(activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permissions = mutableListOf<String>()
-            
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES) 
-                != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
-            }
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO) 
-                != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
-            }
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_AUDIO) 
-                != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.READ_MEDIA_AUDIO)
-            }
-            
-            if (permissions.isNotEmpty()) {
-                ActivityCompat.requestPermissions(
-                    activity,
-                    permissions.toTypedArray(),
-                    REQUEST_CODE_MEDIA_PERMISSIONS
-                )
-            }
-        }
-    }
-
-    /**
-     * API 34+: Request partial media access (READ_MEDIA_VISUAL_USER_SELECTED)
-     */
-    fun requestPartialMediaPermissions(activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val permissions = mutableListOf<String>()
-            
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) 
-                != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
-            }
-            
-            if (permissions.isNotEmpty()) {
-                ActivityCompat.requestPermissions(
-                    activity,
-                    permissions.toTypedArray(),
-                    REQUEST_CODE_MEDIA_PERMISSIONS
-                )
-            }
-        }
-    }
-
-    /**
-     * Open Usage Access settings for PACKAGE_USAGE_STATS
-     */
-    fun openUsageAccessSettings(activity: Activity) {
-        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-        activity.startActivityForResult(intent, REQUEST_CODE_PACKAGE_USAGE)
-    }
-
-    /**
-     * Check if READ_EXTERNAL_STORAGE is granted (API < 33)
-     */
-    fun hasReadStoragePermission(): Boolean {
-        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            // On API 33+, we don't need READ_EXTERNAL_STORAGE
-            true
-        }
-    }
-
-    /**
-     * Check if MANAGE_EXTERNAL_STORAGE is granted (API 30+)
-     */
-    fun hasManageExternalStoragePermission(): Boolean {
+    fun checkAllFilesAccess(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // API 30+ — must use Environment.isExternalStorageManager()
             Environment.isExternalStorageManager()
         } else {
-            false
-        }
-    }
-
-    /**
-     * Check if granular media permissions are granted (API 33+)
-     */
-    fun hasMediaPermissions(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val images = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.READ_MEDIA_IMAGES
+            // API 24-29 — standard runtime permission check is fine here
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.READ_EXTERNAL_STORAGE
             ) == PackageManager.PERMISSION_GRANTED
-            val video = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.READ_MEDIA_VIDEO
+        }
+    }
+
+    /**
+     * Check PACKAGE_USAGE_STATS.
+     *
+     * CRITICAL: Do NOT use ContextCompat.checkSelfPermission() for PACKAGE_USAGE_STATS.
+     * It always returns DENIED. Must use AppOpsManager.checkOpNoThrow().
+     */
+    fun checkUsageStatsAccess(): Boolean {
+        val appOpsManager = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // API 29+ — use unsafeCheckOpNoThrow (checkOpNoThrow is deprecated on Q+)
+            appOpsManager.unsafeCheckOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                context.packageName
+            )
+        } else {
+            // API 24-28
+            appOpsManager.checkOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                context.packageName
+            )
+        }
+        return if (mode == android.app.AppOpsManager.MODE_DEFAULT) {
+            // Some devices use MODE_DEFAULT — fallback to checkSelfPermission in this case only
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.PACKAGE_USAGE_STATS
             ) == PackageManager.PERMISSION_GRANTED
-            val audio = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.READ_MEDIA_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
-            images && video && audio
         } else {
-            hasReadStoragePermission()
+            mode == android.app.AppOpsManager.MODE_ALLOWED
         }
     }
 
-    /**
-     * Check if PACKAGE_USAGE_STATS permission is granted
-     * This is NOT a runtime permission - it requires Usage Access in Settings
-     */
-    fun hasPackageUsageStatsPermission(): Boolean {
-        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        )
-        return mode == AppOpsManager.MODE_ALLOWED
+    private fun checkMediaPermission(permission: String): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true // not needed below API 33
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
     }
 
     /**
-     * Check if QUERY_ALL_PACKAGES is declared in manifest
+     * Get the intent to request MANAGE_EXTERNAL_STORAGE.
+     * Launch this with rememberLauncherForActivityResult — NOT requestPermissions().
+     *
+     * Try app-specific intent first, fall back to general all-files intent.
      */
-    fun hasQueryAllPackagesPermission(): Boolean {
-        return try {
-            val pm = context.packageManager
-            pm.getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS)
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    /**
-     * Get the overall permission status for the app
-     * Returns the most restrictive level of access
-     */
-    fun getOverallPermissionLevel(): PermissionLevel {
-        return when {
-            hasManageExternalStoragePermission() -> PermissionLevel.FULL_ACCESS
-            hasMediaPermissions() -> PermissionLevel.MEDIA_ACCESS
-            hasReadStoragePermission() -> PermissionLevel.LEGACY_STORAGE
-            else -> PermissionLevel.NO_ACCESS
-        }
-    }
-
-    /**
-     * Check if we have enough permissions to do a scan
-     */
-    fun canPerformScan(): Boolean {
-        return hasManageExternalStoragePermission() || hasMediaPermissions() || hasReadStoragePermission()
-    }
-
-    /**
-     * Check if we can show app storage stats
-     */
-    fun canShowAppStats(): Boolean {
-        return hasPackageUsageStatsPermission()
-    }
-
-    /**
-     * Handle permission result from Activity
-     */
-    fun onRequestPermissionsResult(
-        requestCode: Int,
-        grantResults: IntArray
-    ): PermissionResult {
-        return when (requestCode) {
-            REQUEST_CODE_READ_STORAGE -> {
-                val granted = grantResults.isNotEmpty() && 
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED
-                PermissionResult.READ_STORAGE_RESULT(granted)
+    fun getAllFilesAccessIntent(): Intent {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                }
+            } catch (e: Exception) {
+                // Fallback — some manufacturers don't support app-specific intent
+                Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
             }
-            REQUEST_CODE_MEDIA_PERMISSIONS -> {
-                val allGranted = grantResults.isNotEmpty() && 
-                    grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-                PermissionResult.MEDIA_PERMISSIONS_RESULT(allGranted)
-            }
-            else -> PermissionResult.UNKNOWN
-        }
-    }
-
-    /**
-     * Handle activity result for MANAGE_EXTERNAL_STORAGE
-     */
-    fun onManageStorageResult(): PermissionResult {
-        return if (hasManageExternalStoragePermission()) {
-            PermissionResult.MANAGE_STORAGE_GRANTED
         } else {
-            PermissionResult.MANAGE_STORAGE_DENIED
+            // API < 30 — use standard storage permission (requested via requestPermissions, not this)
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${context.packageName}")
+            }
         }
     }
 
     /**
-     * Handle activity result for Usage Access
+     * Get the intent to request PACKAGE_USAGE_STATS.
+     * Launch this with rememberLauncherForActivityResult.
      */
-    fun onUsageAccessResult(): PermissionResult {
-        return if (hasPackageUsageStatsPermission()) {
-            PermissionResult.USAGE_ACCESS_GRANTED
-        } else {
-            PermissionResult.USAGE_ACCESS_DENIED
+    fun getUsageAccessIntent(): Intent {
+        return Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+            // On some devices, deep-link directly to this app's entry
+            try {
+                data = Uri.parse("package:${context.packageName}")
+            } catch (e: Exception) {
+                // ignore — will open general usage access list
+            }
         }
     }
-
-    /**
-     * Get permission rationale message based on current state
-     */
-    fun getPermissionRationale(): String {
-        return when {
-            !hasManageExternalStoragePermission() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                "To scan all files on your device, Adirstat needs 'Files and media' access. " +
-                "This allows the app to analyze all folders and show you exactly what's using storage."
-            }
-            !hasMediaPermissions() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                "To scan media files (photos, videos, music), Adirstat needs permission to access them."
-            }
-            !hasReadStoragePermission() -> {
-                "To scan files on your device, Adirstat needs storage permission."
-            }
-            else -> ""
-        }
-    }
-}
-
-/**
- * Overall permission state
- */
-data class PermissionState(
-    val hasReadStorage: Boolean = false,
-    val hasManageExternalStorage: Boolean = false,
-    val hasMediaPermissions: Boolean = false,
-    val hasPackageUsageStats: Boolean = false,
-    val hasQueryAllPackages: Boolean = false
-)
-
-/**
- * Permission level based on what access is granted
- */
-enum class PermissionLevel {
-    FULL_ACCESS,      // MANAGE_EXTERNAL_STORAGE granted
-    MEDIA_ACCESS,     // Granular media permissions (API 33+)
-    LEGACY_STORAGE,   // READ_EXTERNAL_STORAGE only (API < 33)
-    NO_ACCESS         // No permissions granted
-}
-
-/**
- * Result of permission request
- */
-sealed class PermissionResult {
-    data class READ_STORAGE_RESULT(val granted: Boolean) : PermissionResult()
-    data class MEDIA_PERMISSIONS_RESULT(val granted: Boolean) : PermissionResult()
-    data object MANAGE_STORAGE_GRANTED : PermissionResult()
-    data object MANAGE_STORAGE_DENIED : PermissionResult()
-    data object USAGE_ACCESS_GRANTED : PermissionResult()
-    data object USAGE_ACCESS_DENIED : PermissionResult()
-    data object UNKNOWN : PermissionResult()
 }

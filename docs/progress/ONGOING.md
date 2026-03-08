@@ -8,7 +8,17 @@ This document tracks tasks currently being worked on.
 
 | Task ID | Description | Feature ID | Notes |
 |---------|-------------|------------|-------|
-| - | UI Bug fixes Round 4 | - | Permission screen, treemap colors, breadcrumb, search fixes |
+| ROUND-7-1 | Remove fake root virtual nodes | - | Delete injected `System` / `Apps` nodes; log only real root children |
+| ROUND-7-2 | Fix dashboard media totals | F-007 | Query `MediaStore` for image/video/audio bytes so Media is not `0 B` |
+| ROUND-7-3 | Add treemap virtual app layer | F-026, F-036, F-037 | Merge real scan nodes with treemap-only virtual app-data nodes at root |
+| ROUND-7-4 | Fix list folder navigation | F-018 | Single tap enters folder, long-press opens sheet, back navigates up |
+| ROUND-7-5 | Remove duplicate scan button | F-004 | Keep only the dashboard `Scan Storage` FAB; card tap opens treemap after scan |
+| ROUND-8-1 | Fix treemap title and total | F-013 | Root title is `Storage`; root total uses true partition used bytes |
+| ROUND-8-2 | Fix crushed treemap blocks | F-013, F-014 | Enforce top-20 + Others and minimum-area grouping before drawing |
+| ROUND-8-3 | Fix breadcrumb path | F-016 | Hide breadcrumb at root; show `Storage › …` path when drilled in |
+| ROUND-9-1 | Add internal-storage spotlight section | F-002, F-004 | Dedicated internal-storage section with summary pills and improved presentation |
+| ROUND-9-2 | Restore search navigation and app indexing | F-021, F-026 | Search indexes virtual app folders and routes into file-list browsing |
+| ROUND-9-3 | Complete app-aware list browsing | F-018, F-026, F-036 | Treemap list mode shows raw app nodes; file list resolves nested real/virtual paths |
 
 ---
 
@@ -74,4 +84,4 @@ When completing a task:
 
 ---
 
-Last updated: March 7, 2026
+Last updated: March 8, 2026

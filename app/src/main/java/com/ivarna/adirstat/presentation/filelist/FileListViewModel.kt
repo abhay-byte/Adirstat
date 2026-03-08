@@ -2,6 +2,7 @@ package com.ivarna.adirstat.presentation.filelist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ivarna.adirstat.data.source.VirtualNodeBuilder
 import com.ivarna.adirstat.domain.model.FileNode
 import com.ivarna.adirstat.domain.usecase.ScanStorageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,6 +16,8 @@ import javax.inject.Inject
 data class FileListUiState(
     val isLoading: Boolean = true,
     val files: List<FileNode> = emptyList(),
+    val currentDirectory: FileNode.Directory? = null,
+    val navigationStack: List<FileNode.Directory> = emptyList(),
     val searchQuery: String = "",
     val sortOption: SortOption = SortOption.SIZE_DESC,
     val activeFilters: List<FilterOption> = emptyList(),
@@ -42,28 +45,57 @@ enum class FilterOption(val displayName: String) {
 
 @HiltViewModel
 class FileListViewModel @Inject constructor(
-    private val scanStorageUseCase: ScanStorageUseCase
+    private val scanStorageUseCase: ScanStorageUseCase,
+    private val virtualNodeBuilder: VirtualNodeBuilder
 ) : ViewModel() {
+
+    companion object {
+        private const val DEFAULT_ROOT_PATH = "/storage/emulated/0"
+    }
 
     private val _uiState = MutableStateFlow(FileListUiState())
     val uiState: StateFlow<FileListUiState> = _uiState.asStateFlow()
     
-    private var allFiles: List<FileNode> = emptyList()
+    private var rootDirectory: FileNode.Directory? = null
+    private var currentDirectory: FileNode.Directory? = null
+    private var virtualRootNodes: List<FileNode.Directory> = emptyList()
 
     fun loadFiles(volumePath: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val result = scanStorageUseCase.getCachedScan(volumePath)
-                result.fold(
-                    onSuccess = { rootNode ->
-                        allFiles = flattenFileTree(rootNode)
-                        applyFiltersAndSort()
-                    },
-                    onFailure = { e ->
-                        _uiState.update { it.copy(isLoading = false, error = e.message) }
+                val rootPath = when {
+                    volumePath.startsWith("virtual://") -> DEFAULT_ROOT_PATH
+                    volumePath.startsWith(DEFAULT_ROOT_PATH) -> DEFAULT_ROOT_PATH
+                    else -> volumePath
+                }
+
+                val result = scanStorageUseCase.getCachedScan(rootPath)
+                val rootNode = result.getOrNull()
+                if (rootNode != null) {
+                    rootDirectory = rootNode
+                    virtualRootNodes = virtualNodeBuilder.buildAppVirtualNodes()
+
+                    val targetDirectory = resolveDirectory(volumePath) ?: rootNode
+                    val stack = buildNavigationStack(targetDirectory)
+                    currentDirectory = targetDirectory
+
+                    _uiState.update {
+                        it.copy(
+                            currentDirectory = targetDirectory,
+                            navigationStack = stack,
+                            error = null
+                        )
                     }
-                )
+                    applyFiltersAndSort()
+                } else {
+                    val error = result.exceptionOrNull()
+                    if (error != null) {
+                        _uiState.update { it.copy(isLoading = false, error = error.message) }
+                    } else {
+                        _uiState.update { it.copy(isLoading = false, files = emptyList()) }
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
@@ -82,7 +114,7 @@ class FileListViewModel @Inject constructor(
 
     fun setFilter(filter: FilterOption) {
         _uiState.update { 
-            it.copy(activeFilters = it.activeFilters + filter) 
+            it.copy(activeFilters = (it.activeFilters + filter).distinct()) 
         }
         applyFiltersAndSort()
     }
@@ -94,15 +126,53 @@ class FileListViewModel @Inject constructor(
         applyFiltersAndSort()
     }
 
+    fun navigateInto(directory: FileNode.Directory) {
+        currentDirectory = directory
+        _uiState.update {
+            it.copy(
+                currentDirectory = directory,
+                navigationStack = buildNavigationStack(directory)
+            )
+        }
+        applyFiltersAndSort()
+    }
+
+    fun navigateBack(): Boolean {
+        val stack = _uiState.value.navigationStack
+        if (stack.isEmpty()) return false
+
+        val newStack = stack.dropLast(1)
+        val target = newStack.lastOrNull() ?: rootDirectory
+        currentDirectory = target
+        _uiState.update {
+            it.copy(
+                currentDirectory = target,
+                navigationStack = newStack
+            )
+        }
+        applyFiltersAndSort()
+        return true
+    }
+
     private fun applyFiltersAndSort() {
-        var filtered = allFiles
+        val directory = currentDirectory
+        val baseNodes = when {
+            directory == null -> emptyList()
+            directory == rootDirectory -> {
+                (directory.children + virtualRootNodes).sortedByDescending { it.sizeBytes }
+            }
+            else -> directory.children
+        }
+
+        var filtered = baseNodes
 
         // Apply search query
         val query = _uiState.value.searchQuery
         if (query.isNotEmpty()) {
             filtered = filtered.filter { file ->
                 file.name.contains(query, ignoreCase = true) ||
-                file.path.contains(query, ignoreCase = true)
+                file.path.contains(query, ignoreCase = true) ||
+                (file.virtualLabel?.contains(query, ignoreCase = true) == true)
             }
         }
 
@@ -111,9 +181,10 @@ class FileListViewModel @Inject constructor(
         if (filters.isNotEmpty()) {
             filtered = filtered.filter { file ->
                 when {
-                    filters.contains(FilterOption.LARGE_FILES) && file.size > 100 * 1024 * 1024 -> true
+                    filters.contains(FilterOption.LARGE_FILES) && file.sizeBytes > 100 * 1024 * 1024 -> true
+                    filters.contains(FilterOption.APPS) && file.isVirtual -> true
                     file is FileNode.File -> {
-                        val ext = file.extension?.lowercase()
+                        val ext = file.extension.lowercase()
                         when {
                             filters.contains(FilterOption.IMAGES) && ext in listOf("jpg", "jpeg", "png", "gif", "bmp", "webp", "heic") -> true
                             filters.contains(FilterOption.VIDEOS) && ext in listOf("mp4", "mkv", "avi", "mov", "wmv", "flv") -> true
@@ -131,8 +202,8 @@ class FileListViewModel @Inject constructor(
 
         // Apply sorting
         val sorted = when (_uiState.value.sortOption) {
-            SortOption.SIZE_DESC -> filtered.sortedByDescending { it.size }
-            SortOption.SIZE_ASC -> filtered.sortedBy { it.size }
+            SortOption.SIZE_DESC -> filtered.sortedByDescending { it.sizeBytes }
+            SortOption.SIZE_ASC -> filtered.sortedBy { it.sizeBytes }
             SortOption.NAME_ASC -> filtered.sortedBy { it.name.lowercase() }
             SortOption.NAME_DESC -> filtered.sortedByDescending { it.name.lowercase() }
             SortOption.DATE_DESC -> filtered.sortedByDescending { 
@@ -146,21 +217,54 @@ class FileListViewModel @Inject constructor(
         _uiState.update { it.copy(files = sorted, isLoading = false) }
     }
 
-    private fun flattenFileTree(node: FileNode?): List<FileNode> {
-        if (node == null) return emptyList()
-        
-        val result = mutableListOf<FileNode>()
-        
-        fun traverse(current: FileNode) {
-            result.add(current)
-            if (current is FileNode.Directory) {
-                current.children.forEach { child ->
-                    traverse(child)
-                }
+    private fun resolveDirectory(targetPath: String): FileNode.Directory? {
+        val root = rootDirectory ?: return null
+
+        if (targetPath == root.path || targetPath.isBlank()) {
+            return root
+        }
+
+        return when {
+            targetPath.startsWith("virtual://") -> {
+                virtualRootNodes.firstNotNullOfOrNull { findDirectoryByPath(it, targetPath) }
+            }
+            else -> findDirectoryByPath(root, targetPath)
+        }
+    }
+
+    private fun buildNavigationStack(target: FileNode.Directory): List<FileNode.Directory> {
+        val root = rootDirectory ?: return emptyList()
+        if (target.path == root.path) return emptyList()
+
+        findDirectoryChain(root, target.path)?.let { chain ->
+            return chain.drop(1)
+        }
+
+        return virtualRootNodes.firstNotNullOfOrNull { findDirectoryChain(it, target.path) } ?: emptyList()
+    }
+
+    private fun findDirectoryByPath(node: FileNode.Directory, path: String): FileNode.Directory? {
+        if (node.path == path) return node
+
+        node.children.forEach { child ->
+            if (child is FileNode.Directory) {
+                val match = findDirectoryByPath(child, path)
+                if (match != null) return match
             }
         }
-        
-        traverse(node)
-        return result
+        return null
+    }
+
+    private fun findDirectoryChain(node: FileNode.Directory, path: String): List<FileNode.Directory>? {
+        if (node.path == path) return listOf(node)
+
+        node.children.forEach { child ->
+            if (child is FileNode.Directory) {
+                val match = findDirectoryChain(child, path)
+                if (match != null) return listOf(node) + match
+            }
+        }
+
+        return null
     }
 }

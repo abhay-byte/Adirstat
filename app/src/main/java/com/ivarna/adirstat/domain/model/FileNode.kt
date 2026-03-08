@@ -9,8 +9,13 @@ import java.io.Serializable
 sealed class FileNode : Serializable {
     abstract val name: String
     abstract val path: String
-    abstract val size: Long
+    abstract val sizeBytes: Long
     abstract val lastModified: Long
+    abstract val isVirtual: Boolean
+    abstract val virtualLabel: String?
+
+    open val size: Long
+        get() = sizeBytes
 
     /**
      * A file in the file system
@@ -20,8 +25,13 @@ sealed class FileNode : Serializable {
         override val path: String,
         override val size: Long,
         override val lastModified: Long,
-        val extension: String
+        override val isVirtual: Boolean = false,
+        override val virtualLabel: String? = null,
+        val extension: String,
+        val mimeType: String = ""
     ) : FileNode() {
+        override val sizeBytes: Long
+            get() = size
         
         /**
          * Get the file category based on extension
@@ -40,8 +50,12 @@ sealed class FileNode : Serializable {
         val children: List<FileNode>,
         override val size: Long,
         override val lastModified: Long,
+        override val isVirtual: Boolean = false,
+        override val virtualLabel: String? = null,
         val isRestricted: Boolean = false  // For Android/data, Android/obb etc.
     ) : FileNode() {
+        override val sizeBytes: Long
+            get() = size
         
         /**
          * Number of files (including files in subdirectories)

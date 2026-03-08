@@ -1,17 +1,23 @@
 package com.ivarna.adirstat.presentation.treemap
 
+import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ivarna.adirstat.data.source.PartitionTotals
+import com.ivarna.adirstat.data.source.StorageStatsDataSource
+import com.ivarna.adirstat.data.source.VirtualNodeBuilder
 import com.ivarna.adirstat.domain.model.FileNode
 import com.ivarna.adirstat.domain.usecase.ScanStorageUseCase
-import com.ivarna.adirstat.util.Rect
-import com.ivarna.adirstat.util.TreemapLayoutEngine
-import com.ivarna.adirstat.util.TreemapRect
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,36 +27,73 @@ data class TreemapUiState(
     val isLoading: Boolean = true,
     val isScanning: Boolean = false,
     val scanProgress: String = "",
-    val currentNode: FileNode? = null,
-    val breadcrumbs: List<Breadcrumb> = emptyList(),
-    val treemapRects: List<TreemapRect> = emptyList(),
-    val fileCount: Int = 0,
-    val folderCount: Int = 0,
     val selectedFile: FileNode? = null,
     val error: String? = null,
-    // Zoom and pan state
     val zoomScale: Float = 1f,
     val zoomOffset: Offset = Offset.Zero,
     val canvasWidth: Float = 1000f,
     val canvasHeight: Float = 1000f
 )
 
-data class Breadcrumb(
-    val name: String,
-    val node: FileNode
-)
-
 @HiltViewModel
 class TreemapViewModel @Inject constructor(
     private val scanStorageUseCase: ScanStorageUseCase,
-    private val treemapLayoutEngine: TreemapLayoutEngine
+    private val storageStatsDataSource: StorageStatsDataSource,
+    private val virtualNodeBuilder: VirtualNodeBuilder
 ) : ViewModel() {
+
+    companion object {
+        private const val MAX_ROOT_NODES = 20
+    }
 
     private val _uiState = MutableStateFlow(TreemapUiState())
     val uiState: StateFlow<TreemapUiState> = _uiState.asStateFlow()
 
-    private var rootNode: FileNode? = null
+    private val _partitionTotals = MutableStateFlow<PartitionTotals?>(null)
+    private val _realNodes = MutableStateFlow<List<FileNode>>(emptyList())
+    private val _virtualAppNodes = MutableStateFlow<List<FileNode.Directory>>(emptyList())
+    private val _currentSourceNodes = MutableStateFlow<List<FileNode>>(emptyList())
+    val listNodes: StateFlow<List<FileNode>> = _currentSourceNodes.asStateFlow()
+    private val _currentNodes = MutableStateFlow<List<FileNode>>(emptyList())
+    val currentNodes: StateFlow<List<FileNode>> = _currentNodes.asStateFlow()
+
+    private val _navigationStack = MutableStateFlow<List<FileNode.Directory>>(emptyList())
+    val navigationStack: StateFlow<List<FileNode.Directory>> = _navigationStack.asStateFlow()
+
+    val screenTitle: StateFlow<String> = _navigationStack
+        .map { stack ->
+            when {
+                stack.isEmpty() -> "Storage"
+                stack.last().isVirtual -> "🔒 ${stack.last().name}"
+                else -> stack.last().name
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "Storage")
+
+    val displayTotalBytes: StateFlow<Long> = combine(
+        _navigationStack,
+        _partitionTotals,
+        _currentSourceNodes
+    ) { stack, totals, sourceNodes ->
+        if (stack.isEmpty()) {
+            totals?.usedBytes ?: sourceNodes.sumOf { it.sizeBytes }
+        } else {
+            stack.last().sizeBytes
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, 0L)
+
+    val displayItemCount: StateFlow<Int> = _currentSourceNodes
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    private var realRootNode: FileNode.Directory? = null
     private var currentVolumePath: String = ""
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            _partitionTotals.value = storageStatsDataSource.getPartitionTotals()
+        }
+    }
 
     fun loadTreemap(volumePath: String) {
         currentVolumePath = volumePath
@@ -62,14 +105,13 @@ class TreemapViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { node ->
                         if (node != null) {
-                            rootNode = node
-                            displayNode(node)
+                            buildAndDisplayRoot(node)
                         } else {
                             // No cached data - start a new scan
                             startScan(volumePath)
                         }
                     },
-                    onFailure = { e ->
+                    onFailure = {
                         // Error loading cache - start a new scan
                         startScan(volumePath)
                     }
@@ -97,15 +139,14 @@ class TreemapViewModel @Inject constructor(
                                 is com.ivarna.adirstat.domain.usecase.ScanState.Complete -> {
                                     // Save to cache
                                     scanStorageUseCase.saveScanResult(state.rootNode, volumePath)
-                                    
-                                    rootNode = state.rootNode
+
                                     _uiState.update { 
                                         it.copy(
                                             isScanning = false, 
                                             scanProgress = ""
                                         )
                                     }
-                                    displayNode(state.rootNode)
+                                    buildAndDisplayRoot(state.rootNode)
                                 }
                                 else -> {}
                             }
@@ -131,145 +172,98 @@ class TreemapViewModel @Inject constructor(
         }
     }
 
-    private fun displayNode(node: FileNode) {
-        val dirNode = node as? FileNode.Directory
-        val (files, folders) = if (dirNode != null) {
-            dirNode.fileCount.toInt() to dirNode.directoryCount.toInt()
-        } else 0 to 0
-        
-        // Get children for treemap
-        val children = when (node) {
-            is FileNode.Directory -> node.children.sortedByDescending { it.size }
-            is FileNode.File -> listOf(node)
-            else -> emptyList()
-        }
-        
-        // Filter out very small items for better visualization
-        val minSize = if (node.size > 0) node.size / 1000 else 0L
-        val visibleChildren = children.filter { it.size >= minSize }.take(100)
-        
-        // Use actual canvas dimensions
-        val bounds = Rect(0f, 0f, _uiState.value.canvasWidth, _uiState.value.canvasHeight)
-        val rects = treemapLayoutEngine.calculateLayout(
-            items = visibleChildren,
-            bounds = bounds
-        )
-        
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                currentNode = node,
-                breadcrumbs = listOf(Breadcrumb("Root", node)),
-                treemapRects = rects,
-                fileCount = files,
-                folderCount = folders,
-                error = null,
-                zoomScale = 1f,
-                zoomOffset = Offset.Zero
-            )
-        }
+    private suspend fun buildAndDisplayRoot(root: FileNode.Directory) {
+        realRootNode = root
+        val virtualNodes = virtualNodeBuilder.buildAppVirtualNodes()
+        _realNodes.value = root.children.sortedByDescending { it.sizeBytes }
+        _virtualAppNodes.value = virtualNodes.sortedByDescending { it.sizeBytes }
+        _navigationStack.value = emptyList()
+        showRoot()
+
+        Log.d("TreemapVM", "Root: ${root.children.size} real + ${virtualNodes.size} virtual nodes")
+        _uiState.update { it.copy(isLoading = false, error = null, zoomScale = 1f, zoomOffset = Offset.Zero) }
     }
 
-    fun onBlockClick(rect: TreemapRect) {
-        val node = rect.node
-        if (node is FileNode.Directory && node.children.isNotEmpty()) {
-            navigateTo(node)
-        }
+    private fun showRoot() {
+        val allNodes = (_realNodes.value + _virtualAppNodes.value).sortedByDescending { it.sizeBytes }
+        _currentSourceNodes.value = allNodes
+        _currentNodes.value = buildDisplayNodes(allNodes)
+        _uiState.update { it.copy(isLoading = false, error = null, zoomScale = 1f, zoomOffset = Offset.Zero) }
     }
 
-    private fun navigateTo(node: FileNode) {
-        val currentBreadcrumbs = _uiState.value.breadcrumbs.toMutableList()
-        
-        // Check if this node already exists in breadcrumbs (to avoid duplicates)
-        val existingIndex = currentBreadcrumbs.indexOfFirst { it.node === node }
-        if (existingIndex >= 0) {
-            // Node already in breadcrumbs - truncate to this point
-            while (currentBreadcrumbs.size > existingIndex + 1) {
-                currentBreadcrumbs.removeAt(currentBreadcrumbs.size - 1)
-            }
+    private fun showDirectory(directory: FileNode.Directory, stack: List<FileNode.Directory>) {
+        val sourceNodes = directory.children.sortedByDescending { it.sizeBytes }
+        _navigationStack.value = stack
+        _currentSourceNodes.value = sourceNodes
+        _currentNodes.value = if (directory.path.startsWith("virtual://others")) {
+            sourceNodes
         } else {
-            // New node - add it
-            currentBreadcrumbs.add(Breadcrumb(node.name, node))
+            buildDisplayNodes(sourceNodes)
         }
-        
-        val dirNode = node as? FileNode.Directory
-        val (files, folders) = if (dirNode != null) {
-            dirNode.fileCount.toInt() to dirNode.directoryCount.toInt()
-        } else 0 to 0
-        
-        val children = when (node) {
-            is FileNode.Directory -> node.children.sortedByDescending { it.size }
-            is FileNode.File -> listOf(node)
-            else -> emptyList()
-        }
-        
-        val minSize = if (node.size > 0) node.size / 1000 else 0L
-        val visibleChildren = children.filter { it.size >= minSize }.take(100)
-        
-        val bounds = Rect(0f, 0f, _uiState.value.canvasWidth, _uiState.value.canvasHeight)
-        val rects = treemapLayoutEngine.calculateLayout(
-            items = visibleChildren,
-            bounds = bounds
+        _uiState.update { it.copy(isLoading = false, error = null, zoomScale = 1f, zoomOffset = Offset.Zero) }
+    }
+
+    private fun buildDisplayNodes(allNodes: List<FileNode>): List<FileNode> {
+        val sorted = allNodes.sortedByDescending { it.sizeBytes }
+        if (sorted.size <= MAX_ROOT_NODES) return sorted
+
+        val top = sorted.take(MAX_ROOT_NODES)
+        val rest = sorted.drop(MAX_ROOT_NODES)
+        val restBytes = rest.sumOf { it.sizeBytes }
+        val othersNode = FileNode.Directory(
+            name = "Others (${rest.size})",
+            path = "virtual://others/${rest.hashCode()}",
+            children = rest,
+            size = restBytes,
+            lastModified = 0L,
+            isVirtual = true,
+            virtualLabel = "Others (${rest.size} items)"
         )
-        
-        _uiState.update {
-            it.copy(
-                currentNode = node,
-                breadcrumbs = currentBreadcrumbs,
-                treemapRects = rects,
-                fileCount = files,
-                folderCount = folders,
-                zoomScale = 1f,
-                zoomOffset = Offset.Zero
-            )
+        return top + othersNode
+    }
+
+    fun navigateInto(directory: FileNode.Directory) {
+        val newStack = _navigationStack.value + directory
+        showDirectory(directory, newStack)
+    }
+
+    fun onNodeTapped(node: FileNode) {
+        when (node) {
+            is FileNode.Directory -> {
+                if (node.children.isNotEmpty()) navigateInto(node) else selectFile(node)
+            }
+            is FileNode.File -> selectFile(node)
         }
     }
 
-    fun navigateUp() {
-        val breadcrumbs = _uiState.value.breadcrumbs
-        if (breadcrumbs.size > 1) {
-            val newBreadcrumbs = breadcrumbs.dropLast(1)
-            val parent = newBreadcrumbs.last().node
-            navigateTo(parent)
+    fun navigateBack(): Boolean {
+        val stack = _navigationStack.value
+        if (stack.isEmpty()) return false
+
+        val newStack = stack.dropLast(1)
+        if (newStack.isEmpty()) {
+            _navigationStack.value = emptyList()
+            showRoot()
+        } else {
+            showDirectory(newStack.last(), newStack)
         }
+        return true
     }
 
     fun navigateToBreadcrumb(index: Int) {
-        val breadcrumbs = _uiState.value.breadcrumbs
-        if (index < breadcrumbs.size) {
-            val target = breadcrumbs[index].node
-            val newBreadcrumbs = breadcrumbs.take(index + 1)
-            
-            val dirNode = target as? FileNode.Directory
-            val (files, folders) = if (dirNode != null) {
-                dirNode.fileCount.toInt() to dirNode.directoryCount.toInt()
-            } else 0 to 0
-            
-            val children = when (target) {
-                is FileNode.Directory -> target.children.sortedByDescending { it.size }
-                is FileNode.File -> listOf(target)
-                else -> emptyList()
-            }
-            
-            val minSize = if (target.size > 0) target.size / 1000 else 0L
-            val visibleChildren = children.filter { it.size >= minSize }.take(100)
-            
-            val bounds = Rect(0f, 0f, _uiState.value.canvasWidth, _uiState.value.canvasHeight)
-            val rects = treemapLayoutEngine.calculateLayout(
-                items = visibleChildren,
-                bounds = bounds
-            )
-            
-            _uiState.update {
-                it.copy(
-                    currentNode = target,
-                    breadcrumbs = newBreadcrumbs,
-                    treemapRects = rects,
-                    fileCount = files,
-                    folderCount = folders,
-                    zoomScale = 1f,
-                    zoomOffset = Offset.Zero
-                )
+        if (index == 0) {
+            _navigationStack.value = emptyList()
+            showRoot()
+            return
+        }
+
+        val stack = _navigationStack.value
+        if (index <= stack.size) {
+            val newStack = stack.take(index)
+            if (newStack.isEmpty()) {
+                showRoot()
+            } else {
+                showDirectory(newStack.last(), newStack)
             }
         }
     }
@@ -283,6 +277,8 @@ class TreemapViewModel @Inject constructor(
             loadTreemap(currentVolumePath)
         }
     }
+
+    fun canNavigateBack(): Boolean = _navigationStack.value.isNotEmpty()
     
     // Zoom and pan functions
     fun onTransformGesture(centroid: Offset, pan: Offset, zoom: Float) {
@@ -303,39 +299,13 @@ class TreemapViewModel @Inject constructor(
     
     fun updateCanvasSize(width: Float, height: Float) {
         _uiState.update { state ->
-            // Recalculate treemap with new dimensions if significantly different
             if (abs(state.canvasWidth - width) > 50 || abs(state.canvasHeight - height) > 50) {
-                val bounds = Rect(0f, 0f, width, height)
-                val children = when (state.currentNode) {
-                    is FileNode.Directory -> (state.currentNode as FileNode.Directory).children.sortedByDescending { it.size }
-                    is FileNode.File -> listOf(state.currentNode)
-                    else -> emptyList()
-                }
-                val minSize = if (state.currentNode?.size ?: 0 > 0) state.currentNode!!.size / 1000 else 0L
-                val visibleChildren = children.filter { it.size >= minSize }.take(100)
-                val rects = treemapLayoutEngine.calculateLayout(items = visibleChildren, bounds = bounds)
-                
                 state.copy(
                     canvasWidth = width,
-                    canvasHeight = height,
-                    treemapRects = rects
+                    canvasHeight = height
                 )
             } else {
                 state.copy(canvasWidth = width, canvasHeight = height)
-            }
-        }
-    }
-    
-    fun onNodeTapped(localTap: Offset) {
-        val rects = _uiState.value.treemapRects
-        val tappedRect = rects.find { rect ->
-            localTap.x >= rect.x && localTap.x <= rect.x + rect.width &&
-            localTap.y >= rect.y && localTap.y <= rect.y + rect.height
-        }
-        tappedRect?.let { rect ->
-            when (rect.node) {
-                is FileNode.Directory -> navigateTo(rect.node)
-                is FileNode.File -> selectFile(rect.node)
             }
         }
     }

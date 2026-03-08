@@ -103,9 +103,10 @@ com.ivarna.adirstat/
 │   │
 │   ├── source/
 │   │   ├── FileSystemDataSource.kt        # File API scan (visible files)
-│   │   ├── MediaStoreDataSource.kt        # MediaStore fallback
+│   │   ├── MediaStoreDataSource.kt        # MediaStore image/video/audio totals for dashboard
 │   │   ├── StorageStatsDataSource.kt      # StorageStatsManager for accurate partition & app stats
-│   │   └── AppStatsDataSource.kt          # Per-app storage via PackageManager
+│   │   ├── AppStatsDataSource.kt          # Per-app APK sizes via PackageManager
+│   │   └── VirtualNodeBuilder.kt          # Treemap-only virtual app-data nodes from StorageStatsManager
 │   │
 │   └── repository/
 │       ├── StorageRepositoryImpl.kt
@@ -207,30 +208,36 @@ com.ivarna.adirstat/
 sealed class FileNode {
     abstract val name: String
     abstract val path: String
-    abstract val size: Long
+    abstract val sizeBytes: Long
     abstract val lastModified: Long
+    abstract val isVirtual: Boolean
+    abstract val virtualLabel: String?
 
     data class File(
         override val name: String,
         override val path: String,
-        override val size: Long,
+        override val sizeBytes: Long,
         override val lastModified: Long,
+        override val isVirtual: Boolean = false,
+        override val virtualLabel: String? = null,
         val extension: String,
-        val mimeType: String?
+        val mimeType: String = ""
     ) : FileNode()
 
     data class Directory(
         override val name: String,
         override val path: String,
-        override val size: Long,
+        override val sizeBytes: Long,
         override val lastModified: Long,
+        override val isVirtual: Boolean = false,
+        override val virtualLabel: String? = null,
         val children: List<FileNode> = emptyList(),
-        val childCount: Int = 0,
-        val fileCount: Int = 0,
-        val folderCount: Int = 0
+        val isRestricted: Boolean = false
     ) : FileNode()
 }
 ```
+
+`isVirtual=true` is reserved for treemap-only app-data nodes created from `StorageStatsManager`. Root filesystem scans stored in cache contain only real on-disk folders.
 
 ### 4.2 PartitionInfo
 
@@ -348,6 +355,12 @@ The app implements the **Squarified Treemap** algorithm (Ben Shneiderman, 2000) 
 - Pure function, no side effects
 - Unit testable
 
+**Implementation notes:**
+- Nodes are always sorted by `sizeBytes` descending before layout
+- The layout engine minimizes the worst aspect ratio of each row before recursing into the remaining bounds
+- Root-level treemap rendering is capped to `MAX_ROOT_NODES = 20`; remaining nodes are folded into an `Others (N)` node
+- Any node whose estimated canvas area falls below roughly `48dp × 32dp` is grouped into an `Others` aggregate before drawing
+
 ### 6.2 Treemap Rendering: Compose Canvas
 
 The treemap is rendered using Compose's `Canvas` API:
@@ -393,6 +406,38 @@ The app handles permissions differently based on API level:
 | ≤ 29 | Request READ_EXTERNAL_STORAGE at runtime |
 | 30-32 | Check `Environment.isExternalStorageManager()`, launch Settings if false |
 | 33+ | Check MANAGE_EXTERNAL_STORAGE, fallback to READ_MEDIA_* permissions |
+
+### 6.6 MediaStoreDataSource
+
+- Queries `MediaStore.Images`, `MediaStore.Video`, and `MediaStore.Audio`
+- Computes `imageBytes`, `videoBytes`, `audioBytes`, and total counts
+- Feeds `DashboardViewModel` so the dashboard no longer shows `Media = 0 B`
+- Uses an aggregate `SUM(size)` query first, then row iteration fallback
+
+### 6.7 VirtualNodeBuilder
+
+- Builds treemap-only virtual `FileNode.Directory` entries for installed apps using `StorageStatsManager`
+- Filters out apps below 1 MB to reduce treemap noise
+- Marks every generated node with `isVirtual=true`
+- Adds virtual nodes at the treemap root level and also exposes the same virtual directory hierarchy to list/search flows as read-only nodes
+- Creates child breakdown nodes for `APK`, `Data`, and `Cache`
+
+### 6.8 TreemapViewModel Display State
+
+`TreemapViewModel` maintains separate state for:
+
+- real scanned filesystem nodes
+- virtual app-data nodes
+- current navigation stack of `FileNode.Directory`
+- current source nodes (all nodes in the current level)
+- current display nodes (top 20 + `Others`, or direct children when viewing an `Others` bucket)
+
+Additional derived state flows:
+
+- `screenTitle`: `Storage` at root, folder name in real folders, `🔒 AppName` in virtual app nodes
+- `displayTotalBytes`: root shows true partition `usedBytes`; nested levels show the current directory/app size
+- `displayItemCount`: number of raw children in the current level before visual grouping
+- `listNodes`: full raw children for list mode so the user can browse every app node even when the treemap canvas groups items into `Others`
 
 ---
 
@@ -454,25 +499,49 @@ class DeleteFilesUseCase(
 
 ```kotlin
 data class TreemapUiState(
-    val isLoading: Boolean = false,
-    val currentPath: List<String> = emptyList(),
-    val items: List<FileNode> = emptyList(),
-    val totalSize: Long = 0L,
-    val selectedItem: FileNode? = null,
-    val showBottomSheet: Boolean = false,
+    val isLoading: Boolean = true,
+    val isScanning: Boolean = false,
+    val scanProgress: String = "",
+    val selectedFile: FileNode? = null,
     val error: String? = null
 )
 ```
+
+`TreemapViewModel` keeps a real cached root plus a synthetic app-data layer. At the root level it merges:
+
+1. real filesystem children from the scan cache
+2. virtual app-data nodes from `VirtualNodeBuilder`
+
+When the user drills into any directory, only that directory's own children are shown. Virtual nodes are never injected into real subfolders. Root display nodes are reduced to top 20 plus `Others`; the canvas then performs an additional minimum-area grouping pass before layout.
 
 ### 8.2 DashboardViewModel State
 
 ```kotlin
 data class DashboardUiState(
-    val partitions: List<PartitionInfo> = emptyList(),
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
+    val partitionTotals: PartitionTotals? = null,
+    val storageCategories: StorageCategories? = null,
+    val appStats: List<AppStorageInfoBytes> = emptyList(),
+    val lastScanTime: Long? = null,
     val error: String? = null
 )
 ```
+
+`DashboardViewModel` now combines three sources:
+
+- filesystem bytes from the cached scan
+- per-app bytes from `StorageStatsDataSource`
+- image/video/audio totals from `MediaStoreDataSource`
+
+The dashboard UI consumes this state as a dedicated internal-storage spotlight section with used/free chips, app/media/file summary pills, and the same multi-segment storage bar used by regular volume cards.
+
+### 8.3 FileListViewModel and SearchViewModel Behavior
+
+- `FileListViewModel` now accepts either a root storage path or a nested real/virtual directory path.
+- It resolves that path against the cached scan tree plus `VirtualNodeBuilder` output and rebuilds the navigation stack accordingly.
+- Root-level file lists merge real folders with virtual app-data folders.
+- `SearchViewModel` indexes both cached scan nodes and virtual app-data nodes, then matches against `name`, `path`, and `virtualLabel`.
+- Search results can now route the user into the matching directory path or show file actions via bottom sheet.
 
 ---
 
