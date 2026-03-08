@@ -15,6 +15,7 @@ No active round tasks. The storage visualization, list browsing, search, and vir
 ### Bug Fix Round 15 - Launcher Icon Refresh
 - Replaced the default launcher artwork with the provided Downloads logo asset
 - Generated legacy `mipmap-*` launcher icons plus adaptive foreground artwork for Android 8+
+- Switched the adaptive launcher background to transparent so the white logo stays visible
 
 ### Bug Fix Round 14 - Icon Cleanup + Tiny Node Grouping
 - Replaced emoji-based virtual app markers with proper icons in app bars and breadcrumbs

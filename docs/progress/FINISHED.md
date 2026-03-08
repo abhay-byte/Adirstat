@@ -15,7 +15,7 @@ This document tracks all completed tasks for Adirstat.
 | TASK-031 | Sortable file list | 2026-03-08 | Dedicated list browsing supports direct drill-in and sorting |
 | TASK-034 | Wildcard and regex search | 2026-03-08 | Search covers cached scan nodes and virtual app-storage nodes |
 | TASK-039 | Expose virtual app-storage entries with sizes and APK/Data/Cache drill-down | 2026-03-08 | Root treemap/list/search now include protected app-storage nodes |
-| ROUND-15 | Launcher icon refresh | 2026-03-08 | Replaced the default launcher icon with the provided Downloads logo asset across legacy and adaptive icon resources |
+| ROUND-15 | Launcher icon refresh | 2026-03-08 | Replaced the default launcher icon with the provided Downloads logo asset across legacy and adaptive icon resources, with a transparent adaptive background for the white logo |
 | TASK-040 | Open App Info from virtual app-storage entries | 2026-03-08 | Treemap and file-list bottom sheets open Android App Info |
 | ROUND-14 | Icon cleanup and tiny-node grouping | 2026-03-08 | Replaced emoji markers with proper icons, ellipsized long app-bar titles, and grouped empty tiny treemap nodes into `Others` |
 | ROUND-13 | Visible inline App Info buttons | 2026-03-08 | Virtual app rows now show direct settings buttons in dedicated list mode and treemap list mode |
