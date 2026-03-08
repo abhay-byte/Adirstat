@@ -13,10 +13,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
+import com.ivarna.adirstat.presentation.common.components.AppDetailsShortcutCard
 import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
 import java.text.SimpleDateFormat
@@ -31,6 +33,7 @@ fun FileListScreen(
     viewModel: FileListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     var selectedNode by remember { mutableStateOf<FileNode?>(null) }
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -211,7 +214,12 @@ fun FileListScreen(
                             FileListItem(
                                 file = file,
                                 onClick = { onItemClick(file) },
-                                onLongPress = { onItemLongPress(file) }
+                                onLongPress = { onItemLongPress(file) },
+                                onAppDetailsClick = FileActions.getPackageNameFromVirtualPath(file.path)?.let { packageName ->
+                                    {
+                                        FileActions.openAppInfo(context, packageName)
+                                    }
+                                }
                             )
                         }
                     }
@@ -239,7 +247,8 @@ fun FileListScreen(
 private fun FileListItem(
     file: FileNode,
     onClick: () -> Unit,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    onAppDetailsClick: (() -> Unit)? = null
 ) {
     val isDirectory = file is FileNode.Directory
     
@@ -322,6 +331,16 @@ private fun FileListItem(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                } else if (file.isVirtual && onAppDetailsClick != null) {
+                    FilledTonalIconButton(
+                        onClick = onAppDetailsClick,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Open app details"
+                        )
+                    }
                 }
             }
             
@@ -428,34 +447,15 @@ private fun FileDetailBottomSheet(
         // Action buttons
         if (file.isVirtual) {
             val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Protected app-storage summary. You can drill into this item from the list, but it remains read-only.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (packageName != null) {
-                        OutlinedButton(
-                            onClick = {
-                                FileActions.openAppInfo(context, packageName)
-                                onDismiss()
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Settings, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Open app details")
-                        }
+            AppDetailsShortcutCard(
+                summary = "Protected app-storage summary. You can drill into this item from the list, but it remains read-only.",
+                onOpenAppDetails = packageName?.let {
+                    {
+                        FileActions.openAppInfo(context, it)
+                        onDismiss()
                     }
                 }
-            }
+            )
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),

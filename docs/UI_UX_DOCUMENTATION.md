@@ -187,7 +187,7 @@ If no partitions found (rare): "No storage volumes detected"
 | Path | Secondary, 12sp, gray |
 | Size | "XX.X GB" or "XX.X MB" |
 | Type | File type category |
-| Actions Row | Real files/folders: [Open] [Share] [Delete]; virtual app nodes: [Open app details] |
+| Actions Row | Real files/folders: [Open] [Share] [Delete]; virtual app nodes: dedicated app-details shortcut card with [Open app details] |
 
 ### Breadcrumb
 - Hidden at root level
@@ -217,7 +217,7 @@ The treemap displays a second root-level layer of virtual app nodes sourced from
 - Visual treatment: semi-transparent fill + diagonal stripe texture
 - Drill-down shows `APK`, `Data`, and `Cache`
 - Virtual nodes are read-only, but they now appear in list/search browsing as read-only folders with the same drill-down
-- Their detail sheet also includes an `Open app details` action to jump into the Android system App Info page
+- Their detail sheet also includes a dedicated app-details shortcut card with an `Open app details` action to jump into the Android system App Info page
 
 ### Root-Level Treemap Composition
 The treemap root combines two sources:
@@ -281,7 +281,8 @@ The treemap root combines two sources:
 - Single tap on folder → Navigate into that folder
 - Single tap on file → Bottom sheet
 - Long-press on any row → Bottom sheet
-- Long-press on a virtual app folder → Bottom sheet with a direct `Open app details` action
+- Long-press on a virtual app folder → Bottom sheet with a dedicated app-details shortcut card and direct `Open app details` action
+- Virtual app rows in dedicated list mode and treemap list mode show a visible trailing settings button for direct App Info access
 - System back inside a folder → Navigate to parent folder
 - Tap sort → Show dropdown
 - Tap filter chip → Apply filter

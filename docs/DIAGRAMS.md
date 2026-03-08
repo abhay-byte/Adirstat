@@ -191,6 +191,7 @@ classDiagram
 ```mermaid
 classDiagram
     namespace UI_Layer {
+        class AppDetailsShortcutCard
         class DashboardScreen
         class TreemapScreen
         class FileListScreen
@@ -220,7 +221,9 @@ classDiagram
     }
     
     DashboardScreen --> DashboardViewModel
+    TreemapScreen --> AppDetailsShortcutCard
     TreemapScreen --> TreemapViewModel
+    FileListScreen --> AppDetailsShortcutCard
     FileListScreen --> FileListViewModel
     
     DashboardViewModel --> ScanStorageUseCase

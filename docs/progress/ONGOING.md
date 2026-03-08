@@ -12,6 +12,12 @@ No active round tasks. The storage visualization, list browsing, search, and vir
 
 ## Recently Completed (March 8, 2026)
 
+### Bug Fix Round 13 - Visible App Info Buttons
+- Added direct trailing settings buttons on virtual app rows in dedicated list mode and treemap list mode so App Info is discoverable without long-press
+
+### Bug Fix Round 12 - Dedicated App Details Component
+- Added a reusable `AppDetailsShortcutCard` component for virtual app nodes in both treemap and file-list detail sheets
+
 ### Bug Fix Round 11 - Treemap Labels + App Info Actions
 - Restored treemap node title priority with full-fit wrapped labels and no size-only labels
 - Added `Open app details` actions for virtual app-storage nodes from both treemap and file-list bottom sheets

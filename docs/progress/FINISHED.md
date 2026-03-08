@@ -16,6 +16,8 @@ This document tracks all completed tasks for Adirstat.
 | TASK-034 | Wildcard and regex search | 2026-03-08 | Search covers cached scan nodes and virtual app-storage nodes |
 | TASK-039 | Expose virtual app-storage entries with sizes and APK/Data/Cache drill-down | 2026-03-08 | Root treemap/list/search now include protected app-storage nodes |
 | TASK-040 | Open App Info from virtual app-storage entries | 2026-03-08 | Treemap and file-list bottom sheets open Android App Info |
+| ROUND-13 | Visible inline App Info buttons | 2026-03-08 | Virtual app rows now show direct settings buttons in dedicated list mode and treemap list mode |
+| ROUND-12 | Dedicated app-details shortcut component | 2026-03-08 | Shared `AppDetailsShortcutCard` now powers virtual app actions in treemap and file-list sheets |
 | ROUND-7 | Root/data accuracy fixes | 2026-03-08 | Removed fake root nodes, fixed media totals, added virtual app layer, fixed list navigation, removed duplicate scan button |
 | ROUND-8 | Treemap layout and breadcrumb fixes | 2026-03-08 | Correct root title, true totals, grouped density, and breadcrumb path |
 | ROUND-9 | Dashboard/search/list improvements | 2026-03-08 | Added internal-storage spotlight, restored search, and completed app-aware browsing |

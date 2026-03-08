@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
+import com.ivarna.adirstat.presentation.common.components.AppDetailsShortcutCard
 import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
 import com.ivarna.adirstat.util.FileTypeColorMapper
@@ -42,6 +43,7 @@ fun TreemapScreen(
     viewModel: TreemapViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val screenTitle by viewModel.screenTitle.collectAsState()
     val displayTotal by viewModel.displayTotalBytes.collectAsState()
     val currentNodes by viewModel.currentNodes.collectAsState()
@@ -251,6 +253,11 @@ fun TreemapScreen(
                                 viewModel.selectFile(node)
                                 showBottomSheet = true
                             },
+                            onAppDetailsClick = { node ->
+                                FileActions.getPackageNameFromVirtualPath(node.path)?.let { packageName ->
+                                    FileActions.openAppInfo(context, packageName)
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .weight(1f)
@@ -320,8 +327,6 @@ fun TreemapScreen(
         
         // Bottom sheet for file details
         if (showBottomSheet && uiState.selectedFile != null) {
-            val context = LocalContext.current
-            
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false }
             ) {
@@ -406,6 +411,7 @@ private fun FileListView(
     nodes: List<FileNode>,
     onItemClick: (FileNode) -> Unit,
     onItemLongClick: (FileNode) -> Unit,
+    onAppDetailsClick: (FileNode) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val sortedItems = remember(nodes) { 
@@ -449,12 +455,26 @@ private fun FileListView(
                     }
                 },
                 trailingContent = {
-                    if (item is FileNode.Directory) {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (item.isVirtual) {
+                            FilledTonalIconButton(
+                                onClick = { onAppDetailsClick(item) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Open app details"
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+                        if (item is FileNode.Directory) {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 modifier = Modifier
@@ -504,34 +524,15 @@ private fun FileDetailsContent(
         
         if (file.isVirtual) {
             val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Protected app-storage summary. This node is virtual, read-only, and cannot be opened, shared, or deleted.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (packageName != null) {
-                        OutlinedButton(
-                            onClick = {
-                                FileActions.openAppInfo(context, packageName)
-                                onDismiss()
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Settings, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Open app details")
-                        }
+            AppDetailsShortcutCard(
+                summary = "Protected app-storage summary. This node is virtual, read-only, and cannot be opened, shared, or deleted.",
+                onOpenAppDetails = packageName?.let {
+                    {
+                        FileActions.openAppInfo(context, it)
+                        onDismiss()
                     }
                 }
-            }
+            )
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),

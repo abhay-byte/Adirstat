@@ -75,7 +75,7 @@ All features are grouped by module. Each feature has an ID (F-001 to F-037), nam
 | ID | Feature | Description | Status |
 |----|---------|-------------|--------|
 | F-026 | Per-App Storage in Treemap | Show per-app protected storage as virtual nodes in treemap and list/search drill-down flows with APK/Data/Cache breakdown | ✅ Complete |
-| F-027 | Open App Info | Open system App Info from app-storage entries in list and treemap detail sheets | ✅ Complete |
+| F-027 | Open App Info | Open system App Info from app-storage entries in list and treemap detail sheets, plus visible list-row shortcuts, using a dedicated reusable shortcut component | ✅ Complete |
 | F-036 | Virtual App Data Nodes | Display protected app-data nodes as virtual entries with lock styling and read-only drill-down | ✅ Complete |
 | F-037 | Virtual App Breakdown Drill-Down | Drill into a virtual app node to inspect APK/Data/Cache segments | ✅ Complete |
 

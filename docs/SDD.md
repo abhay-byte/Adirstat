@@ -144,9 +144,9 @@ com.ivarna.adirstat/
 ├── presentation/
 │   ├── common/
 │   │   ├── components/
+│   │   │   ├── AppDetailsShortcutCard.kt  # Reusable virtual app-settings shortcut card
 │   │   │   ├── StorageBar.kt              # Usage bar component
-│   │   │   ├── FileTypeIcon.kt            # File type icons
-│   │   │   └── BottomSheetContent.kt
+│   │   │   └── FileTypeIcon.kt            # File type icons
 │   │   └── theme/
 │   │       ├── Color.kt                   # App colors
 │   │       ├── Type.kt                    # Typography
@@ -543,7 +543,8 @@ The spotlight intentionally uses solid `surfaceVariant` / `surface` containers f
 - It resolves that path against the cached scan tree plus `VirtualNodeBuilder` output and rebuilds the navigation stack accordingly.
 - Root-level file lists merge real folders with virtual app-data folders.
 - File-list row interaction uses a single combined click handler so tap always drills in and long-press always opens the detail sheet.
-- Virtual app detail sheets in treemap and file-list flows can deep-link into `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for cache/data clearing or uninstall.
+- Virtual app detail sheets in treemap and file-list flows use a shared `AppDetailsShortcutCard` component that deep-links into `Settings.ACTION_APPLICATION_DETAILS_SETTINGS` for cache/data clearing or uninstall.
+- Virtual app rows in the dedicated file list and treemap list mode also expose a visible inline settings icon so App Info is discoverable without opening the bottom sheet.
 - `SearchViewModel` indexes both cached scan nodes and virtual app-data nodes, then matches against `name`, `path`, and `virtualLabel`.
 - Search results can now route the user into the matching directory path or show file actions via bottom sheet, and the index is refreshed when the screen resumes.
 

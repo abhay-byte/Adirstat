@@ -237,7 +237,7 @@ The app list shall be sortable by:
 - Cache size
 
 #### FR-APP-03: Open App Settings
-Tapping an app, or choosing the app-details action from a virtual app-storage node in the treemap or file list, shall open the system App Info page for that app, allowing users to clear data/cache or uninstall.
+Tapping an app, choosing the app-details action from a virtual app-storage node in the treemap or file list, or using the dedicated visible App Info shortcut shown on virtual app rows in list mode shall open the system App Info page for that app, allowing users to clear data/cache or uninstall.
 
 ---
 
