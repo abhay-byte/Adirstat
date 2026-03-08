@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.ivarna.adirstat.R
 import com.ivarna.adirstat.data.source.StorageCategories
 import com.ivarna.adirstat.util.FileSizeFormatter
 import java.text.SimpleDateFormat
@@ -75,7 +77,14 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Adirstat") },
+                title = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground_image),
+                        contentDescription = "Adirstat",
+                        modifier = Modifier.size(32.dp),
+                        tint = Color.Unspecified
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer

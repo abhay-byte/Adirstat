@@ -80,7 +80,7 @@ This document provides detailed specifications for all 13 screens in Adirstat.
 **Purpose:** Main entry point showing all storage partitions with usage summary.
 
 ### Layout
-- **Top App Bar:** Title "Adirstat" + Search icon + Settings icon
+- **Top App Bar:** App logo only + Search icon + Settings icon
 - **Content:** Scrollable list with a dedicated Internal Storage spotlight section followed by other partition cards
 - **Bottom Navigation:** Dashboard | Apps | History | Settings
 
