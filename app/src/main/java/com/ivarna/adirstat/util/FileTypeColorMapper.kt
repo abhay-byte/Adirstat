@@ -2,22 +2,13 @@ package com.ivarna.adirstat.util
 
 import androidx.compose.ui.graphics.Color
 import com.ivarna.adirstat.domain.model.FileNode
+import com.ivarna.adirstat.presentation.theme.SemanticColors
 
 /**
  * Maps file types to colors for treemap visualization.
- * These are hardcoded colors, NOT Material theme colors.
+ * Uses SemanticColors from the Precision Mosaic Design System.
  */
 object FileTypeColorMapper {
-    
-    // Color palette for treemap
-    val IMAGE_COLOR = Color(0xFF4CAF50)       // Green
-    val VIDEO_COLOR = Color(0xFFF44336)        // Red
-    val AUDIO_COLOR = Color(0xFF9C27B0)       // Purple
-    val DOCUMENT_COLOR = Color(0xFFFF9800)    // Orange
-    val ARCHIVE_COLOR = Color(0xFF795548)     // Brown
-    val CODE_COLOR = Color(0xFF00BCD4)        // Cyan
-    val APP_DATA_COLOR = Color(0xFF455A64)    // Dark blue-grey for virtual app data
-    val OTHER_COLOR = Color(0xFF607D8B)       // Blue-grey (fallback)
     
     /**
      * Get color for a file node based on its extension
@@ -25,21 +16,23 @@ object FileTypeColorMapper {
     fun getColorForFile(extension: String): Color {
         return when (extension.lowercase()) {
             // Images
-            "jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "bmp", "svg", "raw", "tiff", "tif" -> IMAGE_COLOR
+            "jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "bmp", "svg", "raw", "tiff", "tif" -> SemanticColors.Images
             // Videos
-            "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "m4v", "3gp", "mpeg", "mpg" -> VIDEO_COLOR
+            "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "m4v", "3gp", "mpeg", "mpg" -> SemanticColors.Videos
             // Audio
-            "mp3", "wav", "flac", "aac", "ogg", "wma", "m4a", "opus", "aiff" -> AUDIO_COLOR
+            "mp3", "wav", "flac", "aac", "ogg", "wma", "m4a", "opus", "aiff" -> SemanticColors.Audio
             // Documents
-            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "odt", "ods", "odp", "csv" -> DOCUMENT_COLOR
-            // Archives / APKs
-            "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso", "dmg", "apk", "xapk", "apks", "apkm" -> ARCHIVE_COLOR
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "odt", "ods", "odp", "csv" -> SemanticColors.Documents
+            // APKs
+            "apk", "xapk", "apks", "apkm" -> SemanticColors.Apk
+            // Archives
+            "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso", "dmg" -> SemanticColors.SystemOther // Or maybe a dedicated archive color
             // Code
-            "kt", "java", "py", "js", "ts", "html", "css", "xml", "json", "yaml", "yml", "sh", "bash", "gradle", "kts", "cpp", "c", "h", "hpp", "cs", "go", "rs", "swift" -> CODE_COLOR
+            "kt", "java", "py", "js", "ts", "html", "css", "xml", "json", "yaml", "yml", "sh", "bash", "gradle", "kts", "cpp", "c", "h", "hpp", "cs", "go", "rs", "swift" -> SemanticColors.Code
             // Files without extension - treat as unknown
-            "", "__noext__" -> OTHER_COLOR
+            "", "__noext__" -> SemanticColors.SystemOther
             // Fallback
-            else -> OTHER_COLOR
+            else -> SemanticColors.SystemOther
         }
     }
     
@@ -47,7 +40,7 @@ object FileTypeColorMapper {
      * Get color for any file node (file or directory)
      */
     fun getColorForNode(node: FileNode): Color {
-        if (node.isAppNode) return APP_DATA_COLOR
+        if (node.isAppNode) return SemanticColors.SystemOther // Could use a specific App color if needed
         return when (node) {
             is FileNode.File -> getColorForFile(node.extension)
             is FileNode.Directory -> {

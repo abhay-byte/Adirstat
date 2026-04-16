@@ -1,32 +1,37 @@
 package com.ivarna.adirstat.presentation.permission
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.os.bundleOf
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.ivarna.adirstat.util.PermissionManager
+import com.ivarna.adirstat.R
+import com.ivarna.adirstat.presentation.theme.*
 
 @Composable
 fun PermissionScreen(
@@ -35,48 +40,26 @@ fun PermissionScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     
-    // Use SharedPreferences to track first launch - always show permission screen on first run
-    val prefs = remember {
-        context.getSharedPreferences("adirstat_prefs", Context.MODE_PRIVATE)
-    }
-    var hasVisitedPermission by remember { mutableStateOf(prefs.getBoolean("permission_screen_visited", false)) }
-    
-    // Check permission states - but only use for UI display, not auto-navigation
+    val prefs = remember { context.getSharedPreferences("adirstat_prefs", Context.MODE_PRIVATE) }
     var hasManageStorage by remember { mutableStateOf(checkManageStoragePermission()) }
     var hasUsageAccess by remember { mutableStateOf(checkUsageStatsPermission(context)) }
     
-    // Always show permission screen first time - check if already visited and permissions granted
-    val shouldSkipPermission = hasVisitedPermission && hasManageStorage
-    
-    // Launchers for settings intents
-    val manageStorageLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        // Re-check after returning
+    val manageStorageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         hasManageStorage = checkManageStoragePermission()
     }
     
-    val usageAccessLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        // Re-check after returning
+    val usageAccessLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         hasUsageAccess = checkUsageStatsPermission(context)
     }
     
-    // Re-check permissions when resuming from Settings - only skip if already visited and granted
-    DisposableEffect(lifecycleOwner, shouldSkipPermission) {
+    DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && shouldSkipPermission) {
+            if (event == Lifecycle.Event.ON_RESUME) {
                 hasManageStorage = checkManageStoragePermission()
                 hasUsageAccess = checkUsageStatsPermission(context)
-                // Auto-navigate if permissions granted and already visited
-                if (hasManageStorage) {
-                    // Save that user has been through permission screen
+                if (hasManageStorage && hasUsageAccess) {
                     prefs.edit().putBoolean("permission_screen_visited", true).apply()
                     onPermissionsGranted()
-                } else {
-                    // Permission revoked - reset the visited flag
-                    prefs.edit().putBoolean("permission_screen_visited", false).apply()
                 }
             }
         }
@@ -84,172 +67,168 @@ fun PermissionScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.Storage,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "Storage Access Required",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        Text(
-            text = "Adirstat needs the following permissions to show your complete storage breakdown:",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // All Files Access permission
-        PermissionItem(
-            icon = Icons.Default.FolderOpen,
-            title = "All Files Access",
-            description = "Required to scan all files and folders on your device",
-            isGranted = hasManageStorage
-        )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Usage Access permission
-        PermissionItem(
-            icon = Icons.Default.Apps,
-            title = "Usage Access",
-            description = "Required to show per-app storage breakdown (app data & cache sizes)",
-            isGranted = hasUsageAccess
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // Grant All Files Access button
-        if (!hasManageStorage) {
-            Button(
-                onClick = {
-                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                    manageStorageLauncher.launch(intent)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.LockOpen, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Grant All Files Access")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // Background Decoration
+        Box(modifier = Modifier.fillMaxSize().padding(32.dp)) {
+            Box(modifier = Modifier.align(Alignment.TopEnd).offset(x = 48.dp, y = 48.dp).size(256.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), CircleShape).blur(64.dp))
+            Box(modifier = Modifier.align(Alignment.BottomStart).offset(x = (-48).dp, y = 48.dp).size(320.dp).background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f), CircleShape).blur(80.dp))
         }
-        
-        // Grant Usage Access button
-        if (!hasUsageAccess) {
-            OutlinedButton(
-                onClick = {
-                    val intent = Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                    usageAccessLauncher.launch(intent)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.BarChart, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Grant Usage Access (for App Sizes)")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Continue button
-        Button(
-            onClick = {
-                // Save that user has been through permission screen
-                prefs.edit().putBoolean("permission_screen_visited", true).apply()
-                onPermissionsGranted()
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (hasManageStorage)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.secondary
-            )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                if (hasManageStorage) "Continue" else "Continue with Limited Access"
-            )
-        }
-        
-        if (!hasManageStorage) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Limited mode: Some storage categories won't be visible",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
-            )
+            // Header Section
+            Column(
+                modifier = Modifier.padding(top = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .shadow(40.dp, CircleShape, spotColor = Primary)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(Primary, PrimaryContainer)))
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(Icons.Default.Storage, null, tint = Color.White, modifier = Modifier.size(48.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "Adirstat",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Visualize your storage",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            // Cards Section
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                PermissionRationaleCard(
+                    icon = Icons.Default.FolderSpecial,
+                    title = "All Files Access",
+                    description = "We need access to all files on your device to show you exactly what's consuming storage — just like WizTree on Windows.",
+                    isGranted = hasManageStorage,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                PermissionRationaleCard(
+                    icon = Icons.Default.Apps,
+                    title = "Usage Access",
+                    description = "We need usage access to show you how much storage each installed app is using.",
+                    isGranted = hasUsageAccess,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+
+            // Footer CTA
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                GradientButton(
+                    onClick = {
+                        if (!hasManageStorage) {
+                            val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                            manageStorageLauncher.launch(intent)
+                        } else if (!hasUsageAccess) {
+                            val intent = Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                            usageAccessLauncher.launch(intent)
+                        } else {
+                            prefs.edit().putBoolean("permission_screen_visited", true).apply()
+                            onPermissionsGranted()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(64.dp).shadow(24.dp, CircleShape, spotColor = Primary),
+                    shape = CircleShape,
+                    brush = Brush.linearGradient(listOf(Primary, PrimaryContainer))
+                ) {
+                    Text(
+                        text = if (!hasManageStorage || !hasUsageAccess) "Grant Access" else "Get Started",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                TextButton(
+                    onClick = {
+                        prefs.edit().putBoolean("permission_screen_visited", true).apply()
+                        onPermissionsGranted()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Use Limited Mode",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun PermissionItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun PermissionRationaleCard(
+    icon: ImageVector,
     title: String,
     description: String,
-    isGranted: Boolean
+    isGranted: Boolean,
+    color: Color
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isGranted) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else 
-                MaterialTheme.colorScheme.surfaceVariant
-        )
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        shape = CircleShape,
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Icon(
-                imageVector = if (isGranted) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                contentDescription = null,
-                tint = if (isGranted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(32.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
+            Surface(
+                color = color.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, null, tint = if (isGranted) SemanticColors.Images else color, modifier = Modifier.size(28.dp))
+                }
+            }
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
-                )
+                Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
                 )
+            }
+            if (isGranted) {
+                Icon(Icons.Default.CheckCircle, null, tint = SemanticColors.Images)
             }
         }
     }
 }
 
+// Re-using check functions from previous impl
 private fun checkManageStoragePermission(): Boolean {
     return try {
         android.os.Environment.isExternalStorageManager()
@@ -269,5 +248,43 @@ private fun checkUsageStatsPermission(context: Context): Boolean {
         mode == android.app.AppOpsManager.MODE_ALLOWED
     } catch (e: Exception) {
         false
+    }
+}
+
+// Extension for Button brush
+@Composable
+fun GradientButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: androidx.compose.ui.graphics.Shape = ButtonDefaults.shape,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+    brush: Brush? = null,
+    content: @Composable RowScope.() -> Unit
+) {
+    if (brush != null) {
+        Box(
+            modifier = modifier
+                .clip(shape)
+                .background(brush)
+                .clickable(enabled = enabled, onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                modifier = Modifier.padding(ButtonDefaults.ContentPadding),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                content = content
+            )
+        }
+    } else {
+        androidx.compose.material3.Button(
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            shape = shape,
+            colors = colors,
+            content = content
+        )
     }
 }

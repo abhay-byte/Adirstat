@@ -163,39 +163,42 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawTreemapBlock(
     val blockColor = FileTypeColorMapper.getColorForNode(node)
     val blockWidth = rect.width
     val blockHeight = rect.height
+    val cornerRadius = 12f * density
 
+    // Draw base block with rounded corners
+    drawRoundRect(
+        color = blockColor,
+        topLeft = Offset(rect.x, rect.y),
+        size = Size(blockWidth, blockHeight),
+        cornerRadius = CornerRadius(cornerRadius, cornerRadius)
+    )
+
+    // Draw subtle gradient overlay (The Precision Mosaic texture)
+    drawRoundRect(
+        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+            colors = listOf(Color.White.copy(alpha = 0.1f), Color.Transparent),
+            start = Offset(rect.x, rect.y),
+            end = Offset(rect.x + blockWidth, rect.y + blockHeight)
+        ),
+        topLeft = Offset(rect.x, rect.y),
+        size = Size(blockWidth, blockHeight),
+        cornerRadius = CornerRadius(cornerRadius, cornerRadius)
+    )
+
+    // Special treatment for Apps (Stripe pattern)
     if (node.isAppNode) {
-        drawRect(
-            color = blockColor.copy(alpha = 0.75f),
-            topLeft = Offset(rect.x, rect.y),
-            size = Size(blockWidth, blockHeight)
-        )
-        val stripeColor = Color.Black.copy(alpha = 0.12f)
+        val stripeColor = Color.Black.copy(alpha = 0.1f)
         var x = rect.x - rect.height
         while (x < rect.x + rect.width + rect.height) {
             drawLine(
                 color = stripeColor,
                 start = Offset(x, rect.y + rect.height),
                 end = Offset(x + rect.height, rect.y),
-                strokeWidth = 1.5f
+                strokeWidth = 2f * density
             )
-            x += 12f
+            x += 16f * density
         }
-    } else {
-        drawRoundRect(
-            color = blockColor,
-            topLeft = Offset(rect.x, rect.y),
-            size = Size(blockWidth, blockHeight),
-            cornerRadius = CornerRadius(4f, 4f)
-        )
     }
-
-    drawRect(
-        color = Color.Black.copy(alpha = 0.2f),
-        topLeft = Offset(rect.x, rect.y),
-        size = Size(blockWidth, blockHeight),
-        style = Stroke(width = 1.dp.toPx())
-    )
 
     drawNodeLabel(rect, node, density, parentSizeBytes)
 }
@@ -208,32 +211,32 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeLabel(
 ) {
     val blockWidth = rect.width
     val blockHeight = rect.height
-    if (blockWidth < 24f || blockHeight < 14f) return
+    if (blockWidth < 32f || blockHeight < 20f) return
 
     val nameFontSizeSp = when {
-        blockWidth > 220f && blockHeight > 120f -> 13f
-        blockWidth > 140f && blockHeight > 72f -> 11f
-        blockWidth > 80f && blockHeight > 44f -> 9.5f
-        blockWidth > 42f && blockHeight > 24f -> 7.5f
-        else -> 6f
+        blockWidth > 220f && blockHeight > 120f -> 18f
+        blockWidth > 140f && blockHeight > 72f -> 14f
+        blockWidth > 80f && blockHeight > 44f -> 12f
+        blockWidth > 42f && blockHeight > 24f -> 10f
+        else -> 8f
     }
-    val detailFontSizeSp = nameFontSizeSp * 0.80f
+    val detailFontSizeSp = nameFontSizeSp * 0.85f
 
-    val padding = 4f * density
+    val padding = 8f * density
     val maxTextWidth = blockWidth - padding * 2
 
     fun paint(sizeSp: Float, alpha: Int = 255, bold: Boolean = false) = android.graphics.Paint().apply {
         color = android.graphics.Color.WHITE
         this.alpha = alpha
         textSize = sizeSp * density
-        typeface = if (bold) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
-        setShadowLayer(3f, 1f, 1f, android.graphics.Color.BLACK)
+        // Use custom typeface if possible, otherwise bold default
+        typeface = android.graphics.Typeface.create("Space Grotesk", if (bold) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         isAntiAlias = true
     }
 
     fun fitPaintForText(text: String, startSp: Float, bold: Boolean = false, alpha: Int = 255): android.graphics.Paint? {
         var sizeSp = startSp
-        while (sizeSp >= 5f) {
+        while (sizeSp >= 6f) {
             val candidate = paint(sizeSp, alpha = alpha, bold = bold)
             if (candidate.measureText(text) <= maxTextWidth) {
                 return candidate
@@ -247,7 +250,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeLabel(
         if (text.isBlank()) return emptyList()
         if (textPaint.measureText(text) <= maxTextWidth) return listOf(text)
 
-        val tokens = text.split(' ').filter { it.isNotBlank() }
+        val tokens = text.split(' ', '_', '-').filter { it.isNotBlank() }
         val lines = mutableListOf<String>()
 
         if (tokens.size > 1) {
@@ -262,29 +265,16 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeLabel(
                 }
             }
             lines.add(current)
-            if (lines.size <= maxLines && lines.all { textPaint.measureText(it) <= maxTextWidth }) {
+            if (lines.size <= maxLines) {
                 return lines
             }
         }
-
-        val charLines = mutableListOf<String>()
-        var currentChars = ""
-        text.forEach { ch ->
-            val candidate = currentChars + ch
-            if (currentChars.isEmpty() || textPaint.measureText(candidate) <= maxTextWidth) {
-                currentChars = candidate
-            } else {
-                charLines.add(currentChars)
-                currentChars = ch.toString()
-            }
-        }
-        if (currentChars.isNotEmpty()) charLines.add(currentChars)
-        return if (charLines.size <= maxLines) charLines else null
+        return null
     }
 
     fun fitWrappedText(text: String, startSp: Float, maxLines: Int, bold: Boolean = false): Pair<android.graphics.Paint, List<String>>? {
         var sizeSp = startSp
-        while (sizeSp >= 5f) {
+        while (sizeSp >= 6f) {
             val candidatePaint = paint(sizeSp, bold = bold)
             val lines = wrapText(text, candidatePaint, maxLines)
             if (lines != null) {
@@ -300,39 +290,24 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeLabel(
     var y = rect.y + padding
 
     val baseName = node.virtualLabel ?: node.name
-    val displayName = baseName
-    val wrappedName = fitWrappedText(displayName, nameFontSizeSp, maxLines = 3, bold = true)
+    val wrappedName = fitWrappedText(baseName, nameFontSizeSp, maxLines = 2, bold = true)
     var drewName = false
     if (wrappedName != null) {
         val (namePaint, lines) = wrappedName
         val lineHeight = namePaint.textSize * 1.1f
-        val totalHeight = lineHeight * lines.size
-        if (blockHeight >= totalHeight + padding * 2) {
-            lines.forEach { line ->
-                y += namePaint.textSize
-                canvas.drawText(line, textX, y, namePaint)
-                y += (lineHeight - namePaint.textSize)
-            }
-            y += density
-            drewName = true
+        lines.forEach { line ->
+            y += namePaint.textSize
+            canvas.drawText(line, textX, y, namePaint)
+            y += (lineHeight - namePaint.textSize)
         }
+        y += 2f * density
+        drewName = true
     }
 
     val sizeText = FileSizeFormatter.format(node.sizeBytes)
-    val sizePaint = fitPaintForText(sizeText, detailFontSizeSp, alpha = 205)
+    val sizePaint = fitPaintForText(sizeText, detailFontSizeSp, alpha = 230, bold = true)
     if (drewName && sizePaint != null && blockHeight >= y - rect.y + sizePaint.textSize + padding) {
         y += sizePaint.textSize
         canvas.drawText(sizeText, textX, y, sizePaint)
-        y += 1f * density
-    }
-
-    if (drewName && parentSizeBytes > 0L) {
-        val pct = node.sizeBytes * 100f / parentSizeBytes.toFloat()
-        val pctText = if (pct >= 1f) "${pct.toInt()}%" else "<1%"
-        val pctPaint = fitPaintForText(pctText, detailFontSizeSp, alpha = 205)
-        if (pctPaint != null && blockHeight >= y - rect.y + pctPaint.textSize + padding) {
-            y += pctPaint.textSize
-            canvas.drawText(pctText, textX, y, pctPaint)
-        }
     }
 }

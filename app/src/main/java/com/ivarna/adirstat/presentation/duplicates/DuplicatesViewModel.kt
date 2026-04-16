@@ -18,6 +18,12 @@ data class DuplicatesUiState(
     val error: String? = null
 )
 
+data class DuplicateGroup(
+    val files: List<FileNode>,
+    val fileSize: Long,
+    val wastedSpace: Long
+)
+
 @HiltViewModel
 class DuplicatesViewModel @Inject constructor() : ViewModel() {
 

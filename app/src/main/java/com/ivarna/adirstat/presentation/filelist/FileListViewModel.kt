@@ -34,10 +34,12 @@ enum class SortOption(val displayName: String) {
 }
 
 enum class FilterOption(val displayName: String) {
+    ALL("All"),
     IMAGES("Images"),
     VIDEOS("Videos"),
     AUDIO("Audio"),
     DOCUMENTS("Documents"),
+    APK("APKs"),
     APPS("Apps & APKs"),
     ARCHIVES("Archives"),
     LARGE_FILES("Large Files (>100MB)")

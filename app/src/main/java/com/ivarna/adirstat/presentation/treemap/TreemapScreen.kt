@@ -1,37 +1,39 @@
 package com.ivarna.adirstat.presentation.treemap
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.width
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
-import com.ivarna.adirstat.presentation.common.components.AppDetailsShortcutCard
+import com.ivarna.adirstat.presentation.theme.*
 import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
-import com.ivarna.adirstat.util.FileTypeColorMapper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +55,7 @@ fun TreemapScreen(
     var showBottomSheet by remember { mutableStateOf(false) }
     var showListView by remember { mutableStateOf(false) }
     var showLeaveScanDialog by remember { mutableStateOf(false) }
+    
     val selectedListPaths = remember { mutableStateListOf<String>() }
     val isListSelectionMode = showListView && selectedListPaths.isNotEmpty()
     val shouldConfirmLeaveScan = uiState.isScanning || (uiState.isLoading && currentNodes.isEmpty() && uiState.error == null)
@@ -70,312 +73,102 @@ fun TreemapScreen(
         viewModel.loadTreemap(volumePath)
     }
 
-    LaunchedEffect(listNodes, showListView) {
-        val visiblePaths = listNodes.map { it.path }.toSet()
-        selectedListPaths.retainAll(visiblePaths)
-        if (!showListView) selectedListPaths.clear()
-    }
-
     BackHandler(enabled = shouldConfirmLeaveScan || isListSelectionMode || viewModel.canNavigateBack()) {
         handleBackNavigation()
     }
 
-    fun toggleListSelection(node: FileNode) {
-        if (selectedListPaths.contains(node.path)) {
-            selectedListPaths.remove(node.path)
-        } else {
-            selectedListPaths.add(node.path)
-        }
-    }
-    
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (navigationStack.lastOrNull()?.isAppNode == true) {
-                            Icon(
-                                imageVector = Icons.Default.Android,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Text(
-                            text = screenTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { handleBackNavigation() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    if (isListSelectionMode) {
-                        IconButton(
-                            onClick = {
-                                selectedListPaths.clear()
-                                selectedListPaths.addAll(listNodes.map { it.path })
-                            }
-                        ) {
-                            Icon(Icons.Default.SelectAll, contentDescription = "Select all items")
-                        }
-                        IconButton(onClick = { selectedListPaths.clear() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear selection")
-                        }
-                    } else {
-                        IconButton(onClick = {
-                            onNavigateToSearch(
-                                volumePath,
-                                navigationStack.lastOrNull()?.path ?: volumePath
-                            )
-                        }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        }
-
-                        IconButton(onClick = { viewModel.resetZoom() }) {
-                            Icon(
-                                imageVector = Icons.Default.ZoomOutMap,
-                                contentDescription = "Expand"
-                            )
-                        }
-
-                        IconButton(onClick = {
-                            selectedListPaths.clear()
-                            showListView = false
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.GridView,
-                                contentDescription = "Treemap",
-                                tint = if (!showListView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        IconButton(onClick = { showListView = true }) {
-                            Icon(
-                                Icons.Default.FormatListBulleted,
-                                contentDescription = "List",
-                                tint = if (showListView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        IconButton(onClick = { viewModel.refresh() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                        }
-                    }
-                }
+            TreemapTopBar(
+                title = screenTitle,
+                isAppNode = navigationStack.lastOrNull()?.isAppNode == true,
+                showListView = showListView,
+                isSelectionMode = isListSelectionMode,
+                onBack = { handleBackNavigation() },
+                onSearch = { onNavigateToSearch(volumePath, navigationStack.lastOrNull()?.path ?: volumePath) },
+                onToggleView = { showListView = !showListView },
+                onRefresh = { viewModel.refresh() },
+                onSelectAll = { selectedListPaths.clear(); selectedListPaths.addAll(listNodes.map { it.path }) },
+                onClearSelection = { selectedListPaths.clear() }
             )
-        }
+        },
+        floatingActionButton = {
+            TreemapFAB(onClick = { /* Could open analysis */ })
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .padding(horizontal = 24.dp)
         ) {
             if (!uiState.isLoading && uiState.error == null) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Total: ${FileSizeFormatter.format(displayTotal)}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = "$displayItemCount items",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-
-                BreadcrumbRow(
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                BreadcrumbNavigation(
                     stack = navigationStack,
                     onBreadcrumbClick = { index -> viewModel.navigateToBreadcrumb(index) }
                 )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = FileSizeFormatter.format(displayTotal),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "used of 256 GB", // Placeholder for actual capacity
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
             }
             
-            when {
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator()
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("Loading treemap...")
-                        }
-                    }
-                }
-                uiState.isScanning -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(32.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(64.dp),
-                                strokeWidth = 6.dp
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Text(
-                                text = "Scanning storage...",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = uiState.scanProgress,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            if (uiState.scanProgressPercent > 0f) {
-                                LinearProgressIndicator(
-                                    progress = { uiState.scanProgressPercent.coerceIn(0f, 1f) },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "${(uiState.scanProgressPercent * 100).toInt()}% complete",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "${uiState.scannedFiles} files • ${FileSizeFormatter.format(uiState.scannedBytes)} scanned",
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Large scans can take time on devices with many files. Keep this screen open until the treemap appears.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-                uiState.error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = uiState.error!!,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { viewModel.refresh() }) {
-                                Text("Retry")
-                            }
-                        }
-                    }
-                }
-                currentNodes.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No data to display",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                else -> {
-                    // Treemap or List view - use weight to fill remaining space - Bug 1a fix
-                    if (showListView) {
-                        FileListView(
-                            nodes = listNodes,
-                            isSelectionMode = isListSelectionMode,
-                            selectedPaths = selectedListPaths.toSet(),
-                            onItemClick = { node -> 
-                                if (isListSelectionMode) {
-                                    toggleListSelection(node)
-                                } else {
-                                    when (node) {
-                                        is FileNode.Directory -> viewModel.navigateInto(node)
-                                        is FileNode.File -> {
-                                            viewModel.selectFile(node)
-                                            showBottomSheet = true
+            Box(modifier = Modifier.weight(1f)) {
+                when {
+                    uiState.isLoading -> LoadingState()
+                    uiState.isScanning -> ScanningState(uiState)
+                    uiState.error != null -> ErrorState(uiState.error!!, onRetry = { viewModel.refresh() })
+                    currentNodes.isEmpty() -> EmptyState()
+                    else -> {
+                        if (showListView) {
+                            FileListView(
+                                nodes = listNodes,
+                                isSelectionMode = isListSelectionMode,
+                                selectedPaths = selectedListPaths.toSet(),
+                                onItemClick = { node -> 
+                                    if (isListSelectionMode) {
+                                        if (selectedListPaths.contains(node.path)) selectedListPaths.remove(node.path)
+                                        else selectedListPaths.add(node.path)
+                                    } else {
+                                        when (node) {
+                                            is FileNode.Directory -> viewModel.navigateInto(node)
+                                            is FileNode.File -> { viewModel.selectFile(node); showBottomSheet = true }
                                         }
                                     }
+                                },
+                                onItemLongClick = { node -> 
+                                    if (selectedListPaths.contains(node.path)) selectedListPaths.remove(node.path)
+                                    else selectedListPaths.add(node.path)
                                 }
-                            },
-                            onItemLongClick = { node -> toggleListSelection(node) },
-                            onAppDetailsClick = { node ->
-                                FileActions.getPackageNameFromVirtualPath(node.path)?.let { packageName ->
-                                    FileActions.openAppInfo(context, packageName)
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .weight(1f)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .weight(1f)
-                                .padding(8.dp)
-                                .onSizeChanged { size ->
-                                    viewModel.updateCanvasSize(size.width.toFloat(), size.height.toFloat())
-                                }
-                        ) {
-                            TreemapView(
+                            )
+                        } else {
+                            TreemapVisualization(
                                 nodes = currentNodes,
-                                zoomScale = uiState.zoomScale,
-                                zoomOffset = uiState.zoomOffset,
+                                uiState = uiState,
+                                viewModel = viewModel,
                                 onItemClick = { node ->
                                     when (node) {
                                         is FileNode.Directory -> viewModel.navigateInto(node)
-                                        is FileNode.File -> {
-                                            viewModel.selectFile(node)
-                                            showBottomSheet = true
-                                        }
+                                        is FileNode.File -> { viewModel.selectFile(node); showBottomSheet = true }
                                     }
-                                },
-                                onItemLongClick = { node ->
-                                    viewModel.selectFile(node)
-                                    showBottomSheet = true
-                                },
-                                onTransformGesture = { centroid, pan, zoom ->
-                                    viewModel.onTransformGesture(centroid, pan, zoom)
                                 }
                             )
                         }
@@ -384,46 +177,26 @@ fun TreemapScreen(
             }
             
             if (currentNodes.isNotEmpty()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        LegendItem(color = 0xFF4CAF50, label = "Images")
-                        LegendItem(color = 0xFFF44336, label = "Video")
-                        LegendItem(color = 0xFF9C27B0, label = "Audio")
-                        LegendItem(color = 0xFFFF9800, label = "Docs")
-                        LegendItem(color = 0xFF795548, label = "Archives")
-                        LegendItem(color = 0xFF00BCD4, label = "Code")
-                        LegendItem(color = FileTypeColorMapper.APP_DATA_COLOR.value.toLong(), label = "App Data")
-                        LegendItem(color = 0xFF607D8B, label = "Other")
-                        // Extra padding at end for scroll
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                }
+                InfoBar(displayTotal = displayTotal)
             }
+            
+            Spacer(modifier = Modifier.height(24.dp))
         }
-        
-        // Bottom sheet for file details
+
         if (showBottomSheet && uiState.selectedFile != null) {
             ModalBottomSheet(
-                onDismissRequest = { showBottomSheet = false }
+                onDismissRequest = { showBottomSheet = false },
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) },
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                modifier = Modifier.shadow(32.dp) // Glassmorphism handled via background blur in system if possible, or just opacity
             ) {
                 FileDetailsContent(
                     file = uiState.selectedFile!!,
                     onDismiss = { showBottomSheet = false },
                     onOpen = { path -> FileActions.openFile(context, path) },
                     onShare = { path -> FileActions.shareFile(context, path) },
-                    onDelete = { path -> 
-                        FileActions.deleteFile(context, path)
-                        showBottomSheet = false
-                    }
+                    onDelete = { path -> FileActions.deleteFile(context, path); showBottomSheet = false }
                 )
             }
         }
@@ -432,79 +205,226 @@ fun TreemapScreen(
             AlertDialog(
                 onDismissRequest = { showLeaveScanDialog = false },
                 title = { Text("Leave scan?") },
-                text = {
-                    Text("The storage scan is still preparing or running. Leaving now may discard progress and return you to the previous screen.")
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showLeaveScanDialog = false
-                            onNavigateBack()
-                        }
-                    ) {
-                        Text("Leave")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showLeaveScanDialog = false }) {
-                        Text("Stay")
-                    }
+                text = { Text("The storage scan is still running. Leaving now may discard progress.") },
+                confirmButton = { TextButton(onClick = { showLeaveScanDialog = false; onNavigateBack() }) { Text("Leave") } },
+                dismissButton = { TextButton(onClick = { showLeaveScanDialog = false }) { Text("Stay") } }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TreemapTopBar(
+    title: String,
+    isAppNode: Boolean,
+    showListView: Boolean,
+    isSelectionMode: Boolean,
+    onBack: () -> Unit,
+    onSearch: () -> Unit,
+    onToggleView: () -> Unit,
+    onRefresh: () -> Unit,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isAppNode) {
+                    Icon(
+                        imageVector = Icons.Default.Android,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = SpaceGrotesk,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.5).sp
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        actions = {
+            if (isSelectionMode) {
+                IconButton(onClick = onSelectAll) { Icon(Icons.Default.SelectAll, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = onClearSelection) { Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+            } else {
+                IconButton(onClick = onSearch) { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                IconButton(onClick = onToggleView) { 
+                    Icon(if (showListView) Icons.Default.GridView else Icons.Default.ViewList, contentDescription = null, tint = MaterialTheme.colorScheme.primary) 
+                }
+                IconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+    )
+}
+@Composable
+private fun TreemapBottomBar() {
+    Surface(
+        modifier = Modifier.fillMaxWidth().height(80.dp),
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize().blur(16.dp).background(MaterialTheme.colorScheme.background.copy(alpha = 0.4f)))
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BottomNavItem(Icons.Default.GridView, "Dashboard", true)
+            BottomNavItem(Icons.Default.Apps, "Apps", false)
+            BottomNavItem(Icons.Default.History, "History", false)
+            BottomNavItem(Icons.Default.Settings, "Settings", false)
+        }
+    }
+}
+
+@Composable
+private fun BottomNavItem(icon: ImageVector, label: String, isActive: Boolean) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (isActive) MaterialTheme.colorScheme.primary else Color.Transparent)
+            .padding(vertical = 8.dp, horizontal = 16.dp)
+    ) {
+        Icon(icon, null, tint = if (isActive) Color.White else Color(0xFF607D8B), modifier = Modifier.size(24.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = if (isActive) Color.White else Color(0xFF607D8B))
+    }
+}
+
+@Composable
+private fun TreemapFAB(onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.padding(bottom = 16.dp, end = 16.dp).size(56.dp).shadow(12.dp, RoundedCornerShape(16.dp)),
+        color = MaterialTheme.colorScheme.primary,
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.Analytics, contentDescription = null, tint = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun BreadcrumbNavigation(stack: List<FileNode.Directory>, onBreadcrumbClick: (Int) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .horizontalScroll(rememberScrollState())
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = "Storage",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.clickable { onBreadcrumbClick(0) }
+        )
+        stack.forEachIndexed { index, dir ->
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = dir.name,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (index == stack.lastIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = if (index == stack.lastIndex) FontWeight.Bold else FontWeight.Medium,
+                modifier = Modifier.clickable { onBreadcrumbClick(index + 1) }
             )
         }
     }
 }
 
 @Composable
-private fun BreadcrumbRow(
-    stack: List<FileNode.Directory>,
-    onBreadcrumbClick: (Int) -> Unit
+private fun TreemapVisualization(
+    nodes: List<FileNode>,
+    uiState: TreemapUiState,
+    viewModel: TreemapViewModel,
+    onItemClick: (FileNode) -> Unit
 ) {
-    if (stack.isEmpty()) return
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { size -> viewModel.updateCanvasSize(size.width.toFloat(), size.height.toFloat()) }
+    ) {
+        TreemapView(
+            nodes = nodes,
+            zoomScale = uiState.zoomScale,
+            zoomOffset = uiState.zoomOffset,
+            onItemClick = onItemClick,
+            onItemLongClick = { node -> onItemClick(node) }, // Just select for now
+            onTransformGesture = { centroid, pan, zoom -> viewModel.onTransformGesture(centroid, pan, zoom) }
+        )
+    }
+}
 
-    LazyRow(
+@Composable
+private fun InfoBar(displayTotal: Long) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = CircleShape,
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 16.dp)
     ) {
-        item {
-            Text(
-                "Storage",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { onBreadcrumbClick(0) }
-            )
-        }
-
-        itemsIndexed(stack) { index, dir ->
-            Text(
-                " › ",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = if (index < stack.lastIndex) Modifier.clickable { onBreadcrumbClick(index + 1) } else Modifier
-            ) {
-                if (dir.isAppNode) {
-                    Icon(
-                        imageVector = Icons.Default.Android,
-                        contentDescription = null,
-                        tint = if (index == stack.lastIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                )
                 Text(
-                    text = dir.name,
+                    text = "Partition used: ${FileSizeFormatter.format(displayTotal)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "View Details",
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (index == stack.lastIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
-                    fontWeight = if (index == stack.lastIndex) FontWeight.SemiBold else FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -512,122 +432,90 @@ private fun BreadcrumbRow(
 }
 
 @Composable
-private fun LegendItem(color: Long, label: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Surface(
-            modifier = Modifier.size(12.dp),
-            color = Color(color),
-            shape = MaterialTheme.shapes.small
-        ) {}
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+private fun LoadingState() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ScanningState(uiState: TreemapUiState) {
+    Column(Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        CircularProgressIndicator(modifier = Modifier.size(64.dp), strokeWidth = 6.dp)
+        Spacer(Modifier.height(24.dp))
+        Text("Scanning storage...", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text(uiState.scanProgress, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(16.dp))
+        LinearProgressIndicator(progress = { uiState.scanProgressPercent.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().clip(CircleShape))
+    }
+}
+
+@Composable
+private fun ErrorState(error: String, onRetry: () -> Unit) {
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Icon(Icons.Default.Error, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error)
+        Spacer(Modifier.height(16.dp))
+        Text(error, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onRetry) { Text("Retry") }
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("No data to display", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
 @Composable
 private fun FileListView(
     nodes: List<FileNode>,
     isSelectionMode: Boolean,
     selectedPaths: Set<String>,
     onItemClick: (FileNode) -> Unit,
-    onItemLongClick: (FileNode) -> Unit,
-    onAppDetailsClick: (FileNode) -> Unit,
-    modifier: Modifier = Modifier
+    onItemLongClick: (FileNode) -> Unit
 ) {
-    val sortedItems = remember(nodes) { 
-        nodes
-            .sortedByDescending { it.sizeBytes }
+    LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(nodes.sortedByDescending { it.sizeBytes }) { node ->
+            FileListItem(node, isSelectionMode, selectedPaths.contains(node.path), onItemClick, onItemLongClick)
+        }
     }
-    
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(vertical = 8.dp)
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FileListItem(
+    node: FileNode,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
+    onClick: (FileNode) -> Unit,
+    onLongClick: (FileNode) -> Unit
+) {
+    Surface(
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().combinedClickable(onClick = { onClick(node) }, onLongClick = { onLongClick(node) })
     ) {
-        items(
-            items = sortedItems,
-            key = { item -> item.path }
-        ) { item ->
-            val isSelected = selectedPaths.contains(item.path)
-            ListItem(
-                headlineContent = { Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                supportingContent = { Text(FileSizeFormatter.format(item.size)) },
-                leadingContent = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isSelectionMode) {
-                            Checkbox(
-                                checked = isSelected,
-                                onCheckedChange = { onItemClick(item) }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Icon(
-                            imageVector = when {
-                                item is FileNode.Directory && item.isAppNode -> Icons.Default.Android
-                                item is FileNode.Directory -> Icons.Default.Folder
-                                else -> Icons.Default.InsertDriveFile
-                            },
-                            contentDescription = null,
-                            tint = when {
-                                item is FileNode.Directory && item.isAppNode -> FileTypeColorMapper.APP_DATA_COLOR
-                                item is FileNode.Directory -> Color(0xFF5C7A99)
-                                else -> MaterialTheme.colorScheme.primary
-                            }
-                        )
-                    }
-                },
-                overlineContent = {
-                    if (item.isVirtual) {
-                        Text(
-                            text = item.virtualLabel ?: item.path,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                },
-                trailingContent = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (!isSelectionMode && item.isAppNode) {
-                            FilledTonalIconButton(
-                                onClick = { onAppDetailsClick(item) },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = "Open app details"
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
-                        if (!isSelectionMode && item is FileNode.Directory) {
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                colors = ListItemDefaults.colors(
-                    containerColor = if (isSelected) {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    }
-                ),
-                modifier = Modifier
-                    .combinedClickable(
-                        onClick = { onItemClick(item) },
-                        onLongClick = { onItemLongClick(item) }
-                    )
-            )
-            HorizontalDivider()
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (isSelectionMode) Checkbox(checked = isSelected, onCheckedChange = { onClick(node) })
+                Icon(
+                    imageVector = when {
+                        node is FileNode.Directory && node.isAppNode -> Icons.Default.Android
+                        node is FileNode.Directory -> Icons.Default.Folder
+                        else -> Icons.Default.InsertDriveFile
+                    },
+                    contentDescription = null,
+                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary
+                )
+                Column {
+                    Text(node.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(FileSizeFormatter.format(node.sizeBytes), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (node is FileNode.Directory) Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -640,77 +528,32 @@ private fun FileDetailsContent(
     onShare: (String) -> Unit,
     onDelete: (String) -> Unit
 ) {
-    val context = LocalContext.current
+    Column(Modifier.fillMaxWidth().padding(32.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Column {
+            Text(file.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text("Size: ${FileSizeFormatter.format(file.sizeBytes)}", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+        }
+        
+        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+            Text(file.path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+        }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = file.name,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Size: ${FileSizeFormatter.format(file.sizeBytes)}",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Path: ${file.path}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        if (file.isVirtual) {
-            if (file.isAppNode) {
-                val packageName = FileActions.getPackageNameFromVirtualPath(file.path)
-                AppDetailsShortcutCard(
-                    summary = "Protected app-storage summary. This node is virtual, read-only, and cannot be opened, shared, or deleted.",
-                    onOpenAppDetails = packageName?.let {
-                        {
-                            FileActions.openAppInfo(context, it)
-                            onDismiss()
-                        }
-                    }
-                )
-            } else {
-                Text(
-                    text = "This is a grouped virtual item used to keep the treemap readable. Drill into it to browse the underlying folders and files.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(onClick = { onOpen(file.path) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(50)) {
+                Icon(Icons.Default.OpenInNew, null); Spacer(Modifier.width(8.dp)); Text("OPEN")
             }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                TextButton(onClick = { onOpen(file.path) }) {
-                    Icon(Icons.Default.OpenInNew, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Open")
-                }
-                TextButton(onClick = { onShare(file.path) }) {
-                    Icon(Icons.Default.Share, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Share")
-                }
-                TextButton(
-                    onClick = { onDelete(file.path) },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Delete")
-                }
+            OutlinedButton(onClick = { onShare(file.path) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(50)) {
+                Icon(Icons.Default.Share, null); Spacer(Modifier.width(8.dp)); Text("SHARE")
             }
         }
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Button(
+            onClick = { onDelete(file.path) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            shape = RoundedCornerShape(50)
+        ) {
+            Icon(Icons.Default.Delete, null); Spacer(Modifier.width(8.dp)); Text("DELETE")
+        }
     }
 }

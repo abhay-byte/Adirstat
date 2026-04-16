@@ -2,67 +2,74 @@ package com.ivarna.adirstat.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Primary colors
-val Primary = Color(0xFF1B6CA8)
-val OnPrimary = Color.White
-val PrimaryContainer = Color(0xFFD4E3FF)
-val OnPrimaryContainer = Color(0xFF001C3A)
+// "The Precision Mosaic" Colors - Refined from Design Documentation
 
-// Secondary colors
-val Secondary = Color(0xFF545F71)
-val OnSecondary = Color.White
-val SecondaryContainer = Color(0xFFD8E3F8)
-val OnSecondaryContainer = Color(0xFF213141)
+// Primary & Tonal Architecture
+val Primary = Color(0xFF00687A)
+val OnPrimary = Color(0xFFFFFFFF)
+val PrimaryContainer = Color(0xFF5CB7CE)
+val OnPrimaryContainer = Color(0xFF004653)
 
-// Tertiary colors
-val Tertiary = Color(0xFF6B5778)
-val OnTertiary = Color.White
-val TertiaryContainer = Color(0xFFF3DAFF)
-val OnTertiaryContainer = Color(0xFF251432)
+val Secondary = Color(0xFF466270)
+val OnSecondary = Color(0xFFFFFFFF)
+val SecondaryContainer = Color(0xFFC6E4F4)
+val OnSecondaryContainer = Color(0xFF4A6774)
 
-// Light theme colors
-val BackgroundLight = Color(0xFFFDFCFF)
-val OnBackgroundLight = Color(0xFF1A1C1E)
-val SurfaceLight = Color(0xFFFDFCFF)
-val OnSurfaceLight = Color(0xFF1A1C1E)
-val SurfaceVariantLight = Color(0xFFE1E2EC)
-val OnSurfaceVariantLight = Color(0xFF44474E)
-val OutlineLight = Color(0xFF74777F)
-val ErrorLight = Color(0xFFBA1A1A)
-val OnErrorLight = Color.White
+val Tertiary = Color(0xFF006E1C)
+val OnTertiary = Color(0xFFFFFFFF)
+val TertiaryContainer = Color(0xFF5DC05F)
+val OnTertiaryContainer = Color(0xFF004B10)
 
-// Dark theme colors (recommended default for tool app)
-val BackgroundDark = Color(0xFF1A1C1E)
-val OnBackgroundDark = Color(0xFFE3E2E6)
-val SurfaceDark = Color(0xFF252629)
-val OnSurfaceDark = Color(0xFFE3E2E6)
-val SurfaceVariantDark = Color(0xFF44474E)
-val OnSurfaceVariantDark = Color(0xFFC4C6D0)
-val OutlineDark = Color(0xFF8E9099)
-val ErrorDark = Color(0xFFFFB4AB)
-val OnErrorDark = Color(0xFF690005)
+val Error = Color(0xFFBA1A1A)
+val OnError = Color(0xFFFFFFFF)
+val ErrorContainer = Color(0xFFFFDAD6)
+val OnErrorContainer = Color(0xFF93000A)
 
-// Treemap colors (fixed, NOT Material theme colors)
-object TreemapColors {
-    val images = Color(0xFF4CAF50)       // Green
-    val videos = Color(0xFFF44336)       // Red
-    val audio = Color(0xFF9C27B0)        // Purple
-    val documents = Color(0xFFFF9800)    // Orange
-    val archives = Color(0xFF795548)     // Brown
-    val apk = Color(0xFFE91E63)          // Pink
-    val code = Color(0xFF00BCD4)         // Cyan
-    val other = Color(0xFF607D8B)       // Blue-grey
+// Surface Hierarchy & Nesting (No-Line Rule)
+val Surface = Color(0xFFF4FAFC)                 // Base Layer
+val OnSurface = Color(0xFF161D1E)               // Text/Icons on surface
+val SurfaceVariant = Color(0xFFDDE3E5)
+val OnSurfaceVariant = Color(0xFF3C494C)
+
+val Background = Color(0xFFF4FAFC)
+val OnBackground = Color(0xFF161D1E)
+
+val SurfaceContainerLowest = Color(0xFFFFFFFF)  // Content Cards
+val SurfaceContainerLow = Color(0xFFEFF5F6)     // Sectional Wrappers
+val SurfaceContainer = Color(0xFFE9EFF0)        // Base Sectioning
+val SurfaceContainerHigh = Color(0xFFE3E9EB)
+val SurfaceContainerHighest = Color(0xFFDDE3E5) // Content Cards / Tonal Shifts
+
+val Outline = Color(0xFF6C797C)
+val OutlineVariant = Color(0xFFBBC9CC)          // 20% Opacity Ghost Border Fallback if used with alpha
+
+val InverseSurface = Color(0xFF2B3133)
+val InverseOnSurface = Color(0xFFECF2F3)
+val InversePrimary = Color(0xFF79D3EA)
+
+// Ambient Shadow (6% opacity of OnSurface)
+val AmbientShadow = Color(0x0F161D1E)
+
+// Semantic File Palette (Treemap / Cards)
+object SemanticColors {
+    val Images = Color(0xFF4CAF50)       // Green
+    val Videos = Color(0xFFF44336)       // Red
+    val Audio = Color(0xFF9C27B0)        // Purple
+    val Documents = Color(0xFFFF9800)    // Orange
+    val Apk = Color(0xFF795548)          // Brown
+    val Code = Color(0xFF00BCD4)         // Cyan
+    val SystemOther = Color(0xFF607D8B)  // Blue-grey
     
     fun getColorForCategory(category: com.ivarna.adirstat.domain.model.FileCategory): Color {
         return when (category) {
-            com.ivarna.adirstat.domain.model.FileCategory.IMAGES -> images
-            com.ivarna.adirstat.domain.model.FileCategory.VIDEOS -> videos
-            com.ivarna.adirstat.domain.model.FileCategory.AUDIO -> audio
-            com.ivarna.adirstat.domain.model.FileCategory.DOCUMENTS -> documents
-            com.ivarna.adirstat.domain.model.FileCategory.ARCHIVES -> archives
-            com.ivarna.adirstat.domain.model.FileCategory.APK -> apk
-            com.ivarna.adirstat.domain.model.FileCategory.CODE -> code
-            com.ivarna.adirstat.domain.model.FileCategory.OTHER -> other
+            com.ivarna.adirstat.domain.model.FileCategory.IMAGES -> Images
+            com.ivarna.adirstat.domain.model.FileCategory.VIDEOS -> Videos
+            com.ivarna.adirstat.domain.model.FileCategory.AUDIO -> Audio
+            com.ivarna.adirstat.domain.model.FileCategory.DOCUMENTS -> Documents
+            com.ivarna.adirstat.domain.model.FileCategory.ARCHIVES -> SystemOther
+            com.ivarna.adirstat.domain.model.FileCategory.APK -> Apk
+            com.ivarna.adirstat.domain.model.FileCategory.CODE -> Code
+            com.ivarna.adirstat.domain.model.FileCategory.OTHER -> SystemOther
         }
     }
 }
