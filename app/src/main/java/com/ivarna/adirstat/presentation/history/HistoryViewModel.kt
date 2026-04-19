@@ -12,6 +12,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class ScanHistoryItem(
+    val id: Long,
+    val partitionName: String,
+    val partitionPath: String,
+    val scanDate: Long,
+    val totalBytes: Long,
+    val freeBytes: Long,
+    val fileCount: Int,
+    val folderCount: Int,
+    val changeFromPrevious: String? = null
+)
+
 data class HistoryUiState(
     val isLoading: Boolean = true,
     val history: List<ScanHistoryItem> = emptyList(),
@@ -30,7 +42,7 @@ class HistoryViewModel @Inject constructor(
         loadHistory()
     }
 
-    private fun loadHistory() {
+    fun loadHistory() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {

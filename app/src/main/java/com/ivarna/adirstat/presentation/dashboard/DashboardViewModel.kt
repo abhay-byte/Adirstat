@@ -1,5 +1,6 @@
 package com.ivarna.adirstat.presentation.dashboard
 
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ivarna.adirstat.data.source.AppStorageInfoBytes
@@ -136,6 +137,10 @@ class DashboardViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun getPermissionIntent(): Intent {
+        return permissionManager.getAllFilesAccessIntent()
     }
 
     fun checkPermissions() {

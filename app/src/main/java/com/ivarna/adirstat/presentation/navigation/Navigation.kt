@@ -3,35 +3,22 @@ package com.ivarna.adirstat.presentation.navigation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -44,8 +31,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.ivarna.adirstat.presentation.appstats.AppStatsScreen
 import com.ivarna.adirstat.presentation.dashboard.DashboardScreen
+import com.ivarna.adirstat.presentation.duplicates.DuplicatesScreen
+import com.ivarna.adirstat.presentation.filelist.FileListScreen
+import com.ivarna.adirstat.presentation.history.HistoryScreen
 import com.ivarna.adirstat.presentation.permission.PermissionScreen
+import com.ivarna.adirstat.presentation.search.SearchScreen
+import com.ivarna.adirstat.presentation.settings.SettingsScreen
+import com.ivarna.adirstat.presentation.treemap.TreemapScreen
 
 sealed class Screen(val route: String) {
     data object Permission : Screen("permission")
@@ -96,29 +90,26 @@ private val bottomNavScreens = listOf(Screen.Dashboard, Screen.AppStats, Screen.
 fun AdirstatNavHost(
     navController: NavHostController = rememberNavController()
 ) {
-    val navBackStackEntry = navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry.value?.destination?.route
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
     val showBottomBar = currentRoute in bottomNavScreens.map { it.route }
     
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0), // Delegate insets to inner screens
         bottomBar = {
-            AnimatedVisibility(
-                visible = showBottomBar,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
+            if (showBottomBar) {
                 AppBottomNavBar(
                     currentRoute = currentRoute,
                     onNavigate = { route -> navController.navigate(route) { launchSingleTop = true } }
                 )
             }
         }
-    ) { padding ->
+    ) {
         NavHost(
             navController = navController,
             startDestination = Screen.Permission.route,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.Permission.route) {
                 PermissionScreen(
@@ -148,89 +139,74 @@ fun AdirstatNavHost(
                 )
             ) { backStackEntry ->
                 val volumePath = backStackEntry.arguments?.getString("volumePath")?.decodeFromRoute() ?: ""
-                com.ivarna.adirstat.presentation.treemap.TreemapScreen(
+                TreemapScreen(
                     volumePath = volumePath,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSearch = { rootPath, scopePath ->
-                        navController.navigate(Screen.Search.createRoute(rootPath, scopePath))
-                    },
-                    onNavigateToFileList = { path ->
-                        navController.navigate(Screen.FileList.createRoute(path, volumePath))
+                    onNavigateToSearch = { vol, scope ->
+                        navController.navigate(Screen.Search.createRoute(vol, scope))
                     }
                 )
             }
-            
+
             composable(
                 route = Screen.FileList.route,
                 arguments = listOf(
                     navArgument("volumePath") { type = NavType.StringType },
-                    navArgument("rootPath") {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    }
+                    navArgument("rootPath") { type = NavType.StringType; nullable = true }
                 )
             ) { backStackEntry ->
                 val volumePath = backStackEntry.arguments?.getString("volumePath")?.decodeFromRoute() ?: ""
                 val rootPath = backStackEntry.arguments?.getString("rootPath")?.decodeFromRoute()
-                com.ivarna.adirstat.presentation.filelist.FileListScreen(
+                FileListScreen(
                     volumePath = volumePath,
                     rootPath = rootPath,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSearch = { searchRootPath, scopePath ->
-                        navController.navigate(Screen.Search.createRoute(searchRootPath, scopePath))
+                    onNavigateToSearch = { vol, scope ->
+                        navController.navigate(Screen.Search.createRoute(vol, scope))
                     }
                 )
             }
-            
-            composable(Screen.Duplicates.route) {
-                com.ivarna.adirstat.presentation.duplicates.DuplicatesScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-            
-            composable(Screen.AppStats.route) {
-                com.ivarna.adirstat.presentation.appstats.AppStatsScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-            
-            composable(Screen.Settings.route) {
-                com.ivarna.adirstat.presentation.settings.SettingsScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-            
-            composable(Screen.History.route) {
-                com.ivarna.adirstat.presentation.history.HistoryScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-            
+
             composable(
                 route = Screen.Search.route,
                 arguments = listOf(
-                    navArgument("rootPath") {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    },
-                    navArgument("scopePath") {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    }
+                    navArgument("rootPath") { type = NavType.StringType },
+                    navArgument("scopePath") { type = NavType.StringType; nullable = true }
                 )
             ) { backStackEntry ->
-                val rootPath = backStackEntry.arguments?.getString("rootPath")?.decodeFromRoute()
+                val rootPath = backStackEntry.arguments?.getString("rootPath")?.decodeFromRoute() ?: ""
                 val scopePath = backStackEntry.arguments?.getString("scopePath")?.decodeFromRoute()
-                com.ivarna.adirstat.presentation.search.SearchScreen(
+                SearchScreen(
                     rootPath = rootPath,
                     scopePath = scopePath,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToDirectory = { path, searchRootPath ->
-                        navController.navigate(Screen.FileList.createRoute(path, searchRootPath))
+                    onNavigateToDirectory = { path, root ->
+                        navController.navigate(Screen.FileList.createRoute(root ?: rootPath, path))
                     }
+                )
+            }
+
+            composable(Screen.AppStats.route) {
+                AppStatsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.History.route) {
+                HistoryScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Duplicates.route) {
+                DuplicatesScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }
@@ -243,54 +219,30 @@ private fun AppBottomNavBar(
     onNavigate: (String) -> Unit
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.navigationBars),
-        color = Color.Transparent,
-        shadowElevation = 16.dp,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.background,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.98f)
-                        )
-                    )
-                )
-                .padding(vertical = 8.dp, horizontal = 16.dp)
+                .padding(vertical = 12.dp, horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            val screens = listOf(
+                Triple(Screen.Dashboard, Icons.Default.Home, "Dashboard"),
+                Triple(Screen.AppStats, Icons.Default.Apps, "Apps"),
+                Triple(Screen.History, Icons.Default.History, "History"),
+                Triple(Screen.Settings, Icons.Default.Settings, "Settings")
+            )
+
+            screens.forEach { (screen, icon, label) ->
                 BottomNavItem(
-                    icon = Icons.Default.Apps,
-                    label = "Dashboard",
-                    selected = currentRoute == Screen.Dashboard.route,
-                    onClick = { onNavigate(Screen.Dashboard.route) }
-                )
-                BottomNavItem(
-                    icon = Icons.Default.Apps,
-                    label = "Apps",
-                    selected = currentRoute == Screen.AppStats.route,
-                    onClick = { onNavigate(Screen.AppStats.route) }
-                )
-                BottomNavItem(
-                    icon = Icons.Default.History,
-                    label = "History",
-                    selected = currentRoute == Screen.History.route,
-                    onClick = { onNavigate(Screen.History.route) }
-                )
-                BottomNavItem(
-                    icon = Icons.Default.Settings,
-                    label = "Settings",
-                    selected = currentRoute == Screen.Settings.route,
-                    onClick = { onNavigate(Screen.Settings.route) }
+                    icon = icon,
+                    label = label,
+                    selected = currentRoute == screen.route,
+                    onClick = { onNavigate(screen.route) }
                 )
             }
         }
@@ -306,29 +258,33 @@ private fun BottomNavItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     
-    Surface(
-        onClick = onClick,
-        interactionSource = interactionSource,
-        shape = RoundedCornerShape(16.dp),
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        modifier = Modifier.padding(4.dp)
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.outline,
+                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                 modifier = Modifier.size(24.dp)
             )
             Text(
                 text = label,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.outline
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
             )
         }
     }

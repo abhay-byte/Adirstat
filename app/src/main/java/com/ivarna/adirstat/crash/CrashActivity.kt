@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.ivarna.adirstat.presentation.common.components.AdirstatTopBar
 
 class CrashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,8 +60,8 @@ fun CrashScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("App Crashed") },
+            AdirstatTopBar(
+                title = "App Crashed",
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     titleContentColor = MaterialTheme.colorScheme.onErrorContainer

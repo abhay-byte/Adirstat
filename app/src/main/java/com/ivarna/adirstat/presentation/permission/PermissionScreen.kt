@@ -15,10 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -67,118 +64,124 @@ fun PermissionScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // Background Decoration
-        Box(modifier = Modifier.fillMaxSize().padding(32.dp)) {
-            Box(modifier = Modifier.align(Alignment.TopEnd).offset(x = 48.dp, y = 48.dp).size(256.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), CircleShape).blur(64.dp))
-            Box(modifier = Modifier.align(Alignment.BottomStart).offset(x = (-48).dp, y = 48.dp).size(320.dp).background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f), CircleShape).blur(80.dp))
-        }
-
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(padding)
+                .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(64.dp))
+            
             // Header Section
-            Column(
-                modifier = Modifier.padding(top = 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(96.dp)
-                        .shadow(40.dp, CircleShape, spotColor = Primary)
-                        .clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(Primary, PrimaryContainer)))
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(Icons.Default.Storage, null, tint = Color.White, modifier = Modifier.size(48.dp))
-                    }
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "Adirstat",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                Image(
+                    painter = painterResource(id = R.drawable.ic_adirstat_logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp)
                 )
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            Text(
+                text = "Welcome to Adirstat",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = "To visualize and manage your storage ecosystem, we need the following permissions.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Rationale Cards
+            PermissionRationaleCard(
+                icon = Icons.Default.FolderSpecial,
+                title = "All Files Access",
+                description = "Required to scan your internal storage and visualize large files consuming space.",
+                isGranted = hasManageStorage,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            PermissionRationaleCard(
+                icon = Icons.Default.Apps,
+                title = "Usage Access",
+                description = "Required to calculate exactly how much storage each installed application is using.",
+                isGranted = hasUsageAccess,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // CTA Section
+            Button(
+                onClick = {
+                    if (!hasManageStorage) {
+                        val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                        manageStorageLauncher.launch(intent)
+                    } else if (!hasUsageAccess) {
+                        val intent = Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                        usageAccessLauncher.launch(intent)
+                    } else {
+                        prefs.edit().putBoolean("permission_screen_visited", true).apply()
+                        onPermissionsGranted()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                )
+            ) {
                 Text(
-                    text = "Visualize your storage",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
+                    text = if (!hasManageStorage || !hasUsageAccess) "GRANT PERMISSIONS" else "GET STARTED",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 1.sp
                 )
             }
-
-            // Cards Section
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            
+            TextButton(
+                onClick = {
+                    prefs.edit().putBoolean("permission_screen_visited", true).apply()
+                    onPermissionsGranted()
+                },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
             ) {
-                PermissionRationaleCard(
-                    icon = Icons.Default.FolderSpecial,
-                    title = "All Files Access",
-                    description = "We need access to all files on your device to show you exactly what's consuming storage — just like WizTree on Windows.",
-                    isGranted = hasManageStorage,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                
-                PermissionRationaleCard(
-                    icon = Icons.Default.Apps,
-                    title = "Usage Access",
-                    description = "We need usage access to show you how much storage each installed app is using.",
-                    isGranted = hasUsageAccess,
-                    color = MaterialTheme.colorScheme.tertiary
+                Text(
+                    text = "CONTINUE IN LIMITED MODE",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
                 )
             }
-
-            // Footer CTA
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                GradientButton(
-                    onClick = {
-                        if (!hasManageStorage) {
-                            val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                            manageStorageLauncher.launch(intent)
-                        } else if (!hasUsageAccess) {
-                            val intent = Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                            usageAccessLauncher.launch(intent)
-                        } else {
-                            prefs.edit().putBoolean("permission_screen_visited", true).apply()
-                            onPermissionsGranted()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(64.dp).shadow(24.dp, CircleShape, spotColor = Primary),
-                    shape = CircleShape,
-                    brush = Brush.linearGradient(listOf(Primary, PrimaryContainer))
-                ) {
-                    Text(
-                        text = if (!hasManageStorage || !hasUsageAccess) "Grant Access" else "Get Started",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                
-                TextButton(
-                    onClick = {
-                        prefs.edit().putBoolean("permission_screen_visited", true).apply()
-                        onPermissionsGranted()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Use Limited Mode",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -193,27 +196,35 @@ private fun PermissionRationaleCard(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        shape = CircleShape,
-        shadowElevation = 4.dp,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(
+            1.dp, 
+            if (isGranted) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) 
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        ),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Surface(
-                color = color.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.size(48.dp)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(color.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, null, tint = if (isGranted) SemanticColors.Images else color, modifier = Modifier.size(28.dp))
-                }
+                Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = title, 
+                    style = MaterialTheme.typography.titleMedium, 
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
@@ -222,13 +233,17 @@ private fun PermissionRationaleCard(
                 )
             }
             if (isGranted) {
-                Icon(Icons.Default.CheckCircle, null, tint = SemanticColors.Images)
+                Icon(
+                    Icons.Default.CheckCircle, 
+                    null, 
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }
 }
 
-// Re-using check functions from previous impl
 private fun checkManageStoragePermission(): Boolean {
     return try {
         android.os.Environment.isExternalStorageManager()
@@ -248,43 +263,5 @@ private fun checkUsageStatsPermission(context: Context): Boolean {
         mode == android.app.AppOpsManager.MODE_ALLOWED
     } catch (e: Exception) {
         false
-    }
-}
-
-// Extension for Button brush
-@Composable
-fun GradientButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    shape: androidx.compose.ui.graphics.Shape = ButtonDefaults.shape,
-    colors: ButtonColors = ButtonDefaults.buttonColors(),
-    brush: Brush? = null,
-    content: @Composable RowScope.() -> Unit
-) {
-    if (brush != null) {
-        Box(
-            modifier = modifier
-                .clip(shape)
-                .background(brush)
-                .clickable(enabled = enabled, onClick = onClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                modifier = Modifier.padding(ButtonDefaults.ContentPadding),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                content = content
-            )
-        }
-    } else {
-        androidx.compose.material3.Button(
-            onClick = onClick,
-            modifier = modifier,
-            enabled = enabled,
-            shape = shape,
-            colors = colors,
-            content = content
-        )
     }
 }

@@ -53,6 +53,18 @@ class DuplicatesViewModel @Inject constructor() : ViewModel() {
         }
     }
 
+    fun deleteDuplicates(group: DuplicateGroup) {
+        viewModelScope.launch {
+            // Delete all except first
+            group.files.drop(1).forEach { file ->
+                if (file is FileNode.File) {
+                    deleteFile(file)
+                }
+            }
+            findDuplicates()
+        }
+    }
+
     fun deleteFile(file: FileNode.File) {
         viewModelScope.launch {
             try {

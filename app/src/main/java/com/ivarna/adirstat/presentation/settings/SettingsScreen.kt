@@ -26,6 +26,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.painterResource
+import com.ivarna.adirstat.R
+import com.ivarna.adirstat.presentation.common.components.AdirstatTopBar
 import com.ivarna.adirstat.presentation.theme.*
 import kotlinx.coroutines.launch
 
@@ -143,77 +146,70 @@ fun SettingsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsTopBar(onBack: () -> Unit) {
-    TopAppBar(
-        title = {
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.primary)
-            }
-        },
+    AdirstatTopBar(
+        title = "Settings",
         actions = {
             IconButton(onClick = {}) {
                 Icon(Icons.Default.MoreVert, null, tint = MaterialTheme.colorScheme.primary)
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
+        }
     )
 }
 
 @Composable
 private fun SettingsHero() {
-    Column {
-        Text(
-            text = "CORE",
-            style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp),
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-            fontWeight = FontWeight.Black
-        )
+    Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Text(
             text = "Preferences",
-            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 36.sp),
-            modifier = Modifier.offset(y = (-40).dp),
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
         )
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Configure how Adirstat manages and visualizes your storage ecosystem.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.offset(y = (-32).dp)
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
 private fun SettingsSectionHeader(icon: ImageVector, title: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Icon(icon, null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.padding(top = 24.dp, bottom = 16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+        }
         Text(
             text = title,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.sp
         )
     }
 }
 
 @Composable
 private fun ThemeSelectionGrid(selectedTheme: ThemeOption, onThemeSelected: (ThemeOption) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ThemeOptionCard(Modifier.weight(1f), "System", selectedTheme == ThemeOption.SYSTEM) { onThemeSelected(ThemeOption.SYSTEM) }
             ThemeOptionCard(Modifier.weight(1f), "Light", selectedTheme == ThemeOption.LIGHT) { onThemeSelected(ThemeOption.LIGHT) }
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ThemeOptionCard(Modifier.weight(1f), "Dark", selectedTheme == ThemeOption.DARK) { onThemeSelected(ThemeOption.DARK) }
-            ThemeOptionCard(Modifier.weight(1f), "Dynamic Color", false, isGradient = true) { /* Dynamic color action */ }
+            ThemeOptionCard(Modifier.weight(1f), "Dynamic", selectedTheme == ThemeOption.DYNAMIC, isGradient = true) { onThemeSelected(ThemeOption.DYNAMIC) }
         }
     }
 }
@@ -221,19 +217,33 @@ private fun ThemeSelectionGrid(selectedTheme: ThemeOption, onThemeSelected: (The
 @Composable
 private fun ThemeOptionCard(modifier: Modifier, label: String, isActive: Boolean, isGradient: Boolean = false, onClick: () -> Unit) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.04f) else MaterialTheme.colorScheme.surfaceContainerLowest,
         shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(
+            1.dp,
+            if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        ),
         modifier = modifier.clickable(onClick = onClick)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                RadioButton(selected = isActive, onClick = onClick, colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+                RadioButton(
+                    selected = isActive,
+                    onClick = onClick,
+                    colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+                )
             }
             if (isGradient) {
-                Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Primary, SemanticColors.Audio, SemanticColors.Images))))
+                Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Primary, Color(0xFF9C27B0), Color(0xFF4CAF50)))))
             } else {
-                Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))) {
+                Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))) {
                     if (isActive) Box(modifier = Modifier.fillMaxWidth(0.5f).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
                 }
             }
@@ -243,84 +253,147 @@ private fun ThemeOptionCard(modifier: Modifier, label: String, isActive: Boolean
 
 @Composable
 private fun FileSizeSlider(currentSize: MinimumFileSize, onSizeChange: (MinimumFileSize) -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(20.dp)) {
-        Column(modifier = Modifier.padding(24.dp)) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text("Minimum file size", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("Hide smaller files from analysis", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Filter from analysis", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(
                     text = currentSize.displayName,
-                    style = MaterialTheme.typography.displaySmall.copy(fontSize = 24.sp),
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Black
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Slider(
                 value = MinimumFileSize.entries.indexOf(currentSize).toFloat(),
                 onValueChange = { onSizeChange(MinimumFileSize.entries[it.toInt()]) },
                 valueRange = 0f..(MinimumFileSize.entries.size - 1).toFloat(),
-                steps = MinimumFileSize.entries.size - 2
+                steps = MinimumFileSize.entries.size - 2,
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                )
             )
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("0 KB", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
-                Text("100 MB", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
-            }
         }
     }
 }
 
 @Composable
 private fun SettingsListButton(icon: ImageVector, iconContainerColor: Color, title: String, subtitle: String, badgeText: String, onClick: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Surface(color = iconContainerColor, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-            Box(contentAlignment = Alignment.Center) { Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(iconContainerColor.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, modifier = Modifier.size(20.dp), tint = iconContainerColor)
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Surface(color = MaterialTheme.colorScheme.primary, shape = CircleShape) {
-                Text(badgeText, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color.White, fontWeight = FontWeight.Black)
+            if (badgeText != "0") {
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = badgeText,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.outline)
+            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.outlineVariant)
         }
     }
 }
 
 @Composable
 private fun SettingsSwitchItem(icon: ImageVector, iconContainerColor: Color, title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Surface(color = iconContainerColor, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-            Box(contentAlignment = Alignment.Center) { Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer) }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(iconContainerColor.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, modifier = Modifier.size(20.dp), tint = iconContainerColor)
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
     }
 }
 
 @Composable
 private fun SettingsSelectItem(icon: ImageVector, title: String, subtitle: String, options: List<String>, selectedOption: String, onOptionSelected: (String) -> Unit) {
-    Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Surface(color = MaterialTheme.colorScheme.surfaceContainerHighest, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                Box(contentAlignment = Alignment.Center) { Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
             }
             Column {
                 Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Surface(color = MaterialTheme.colorScheme.surfaceContainerLowest, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f), RoundedCornerShape(12.dp))) {
-            Box(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                Text(selectedOption, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.align(Alignment.CenterEnd))
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerLowest,
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+            modifier = Modifier.fillMaxWidth().clickable { /* Show options */ }
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(selectedOption, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                Icon(Icons.Default.ArrowDropDown, null, tint = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -329,36 +402,55 @@ private fun SettingsSelectItem(icon: ImageVector, title: String, subtitle: Strin
 @Composable
 private fun DataActionButton(modifier: Modifier, icon: ImageVector, label: String, containerColor: Color, contentColor: Color, onClick: () -> Unit) {
     Surface(
-        color = containerColor,
+        color = containerColor.copy(alpha = 0.08f),
         shape = RoundedCornerShape(16.dp),
-        modifier = modifier.clickable(onClick = onClick)
+        border = BorderStroke(1.dp, containerColor.copy(alpha = 0.2f)),
+        modifier = modifier.height(56.dp).clickable(onClick = onClick)
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(icon, null, tint = contentColor)
-            Text(label, style = MaterialTheme.typography.labelLarge, color = contentColor, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, null, modifier = Modifier.size(20.dp), tint = containerColor)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge, color = containerColor, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
 private fun AboutCard() {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.padding(24.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column {
-                        Text("Adirstat", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-                        Text("Version 1.0.1", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-                    }
-                    Surface(color = MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(12.dp), modifier = Modifier.size(48.dp)) {
-                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.GridView, null, tint = Color.White, modifier = Modifier.size(32.dp)) }
-                    }
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text("Adirstat", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+                    Text("Version 1.0.1", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    AboutLinkItem("Open source licenses")
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
-                    AboutLinkItem("Privacy policy")
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_adirstat_logo),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AboutLinkItem("Open source licenses")
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
+                AboutLinkItem("Privacy policy")
             }
         }
     }
@@ -367,53 +459,8 @@ private fun AboutCard() {
 @Composable
 private fun AboutLinkItem(label: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-        Icon(Icons.Default.ArrowForwardIos, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.outline)
+        Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
-@Composable
-private fun SettingsBottomBar() {
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(88.dp),
-        color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        shadowElevation = 16.dp
-    ) {
-        Box(modifier = Modifier.fillMaxSize().blur(16.dp).background(MaterialTheme.colorScheme.background.copy(alpha = 0.4f)))
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(Icons.Default.Dashboard, "Dashboard", false)
-            BottomNavItem(Icons.Default.Apps, "Apps", false)
-            BottomNavItem(Icons.Default.History, "History", false)
-            BottomNavItem(Icons.Default.Settings, "Settings", true)
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(icon: ImageVector, label: String, isActive: Boolean) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (isActive) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent)
-            .padding(vertical = 8.dp, horizontal = 16.dp)
-    ) {
-        Icon(
-            icon,
-            null,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else Color(0xFF607D8B),
-            modifier = Modifier.size(24.dp)
-        )
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isActive) MaterialTheme.colorScheme.primary else Color(0xFF607D8B),
-            fontWeight = FontWeight.Bold
-        )
-    }
-}

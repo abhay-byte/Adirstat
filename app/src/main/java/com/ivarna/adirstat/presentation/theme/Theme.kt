@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -51,33 +52,35 @@ private val LightColorScheme = lightColorScheme(
 
 // For dark theme, we adapt the token architecture slightly to ensure dark contrast but keep the soul.
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryContainer, // swap for dark
-    onPrimary = OnPrimaryContainer,
-    primaryContainer = Primary,
-    onPrimaryContainer = OnPrimary,
-    secondary = SecondaryContainer,
-    onSecondary = OnSecondaryContainer,
-    secondaryContainer = Secondary,
-    onSecondaryContainer = OnSecondary,
-    tertiary = TertiaryContainer,
-    onTertiary = OnTertiaryContainer,
-    tertiaryContainer = Tertiary,
-    onTertiaryContainer = OnTertiary,
-    background = OnSurface, // Invert
-    onBackground = Surface,
-    surface = OnSurface,
-    onSurface = Surface,
-    surfaceVariant = OnSurfaceVariant,
-    onSurfaceVariant = SurfaceVariant,
-    outline = OutlineVariant,
-    outlineVariant = Outline,
-    error = Error,
-    onError = OnError,
-    surfaceContainerLowest = androidx.compose.ui.graphics.Color(0xFF0D1112),
-    surfaceContainerLow = androidx.compose.ui.graphics.Color(0xFF161D1E),
-    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF1E2526),
-    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF262E2F),
-    surfaceContainerHighest = androidx.compose.ui.graphics.Color(0xFF2E3738)
+    primary = Color(0xFF5CB7CE),
+    onPrimary = Color(0xFF003640),
+    primaryContainer = Color(0xFF004D5B),
+    onPrimaryContainer = Color(0xFFB4EBFF),
+    secondary = Color(0xFFB1CBD9),
+    onSecondary = Color(0xFF1B3441),
+    secondaryContainer = Color(0xFF304A58),
+    onSecondaryContainer = Color(0xFFCDE7F6),
+    tertiary = Color(0xFF5DC05F),
+    onTertiary = Color(0xFF00390A),
+    tertiaryContainer = Color(0xFF005312),
+    onTertiaryContainer = Color(0xFFBBFFB2),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF0D1112),
+    onBackground = Color(0xFFDDE3E5),
+    surface = Color(0xFF0D1112),
+    onSurface = Color(0xFFDDE3E5),
+    surfaceVariant = Color(0xFF3C494C),
+    onSurfaceVariant = Color(0xFFBBC9CC),
+    outline = Color(0xFF869296),
+    outlineVariant = Color(0xFF3C494C),
+    surfaceContainerLowest = Color(0xFF080D0E),
+    surfaceContainerLow = Color(0xFF161D1E),
+    surfaceContainer = Color(0xFF1E2526),
+    surfaceContainerHigh = Color(0xFF262E2F),
+    surfaceContainerHighest = Color(0xFF2E3738)
 )
 
 @Composable

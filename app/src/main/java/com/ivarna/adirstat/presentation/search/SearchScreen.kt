@@ -13,19 +13,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.domain.model.FileNode
+import com.ivarna.adirstat.presentation.common.components.AdirstatTopBar
 import com.ivarna.adirstat.presentation.theme.*
 import com.ivarna.adirstat.util.FileActions
 import com.ivarna.adirstat.util.FileSizeFormatter
@@ -58,28 +56,26 @@ fun SearchScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp)
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                SearchInputSection(
+                    query = uiState.query,
+                    onQueryChange = { viewModel.search(it) },
+                    useRegex = uiState.useRegex,
+                    useWildcard = uiState.useWildcard,
+                    onToggleRegex = { viewModel.toggleRegex() },
+                    onToggleWildcard = { viewModel.toggleWildcard() }
+                )
+                
+                Spacer(modifier = Modifier.height(20.dp))
+                
+                SearchFilterChips()
+                
+                Spacer(modifier = Modifier.height(24.dp))
+            }
             
-            // Search Input Section
-            SearchInputSection(
-                query = uiState.query,
-                onQueryChange = { viewModel.search(it) },
-                useRegex = uiState.useRegex,
-                useWildcard = uiState.useWildcard,
-                onToggleRegex = { viewModel.toggleRegex() },
-                onToggleWildcard = { viewModel.toggleWildcard() }
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Filter Chips
-            SearchFilterChips()
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // Results List
             Box(modifier = Modifier.weight(1f)) {
                 when {
                     uiState.isSearching -> LoadingIndicator()
@@ -87,27 +83,25 @@ fun SearchScreen(
                     uiState.query.isEmpty() -> EmptySearchState(uiState.isLoading, uiState.hasIndexedFiles)
                     else -> {
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(bottom = 24.dp)
+                            modifier = Modifier.fillMaxSize()
                         ) {
                             item {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
                                         text = "SEARCH RESULTS",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 2.sp
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 1.sp
                                     )
                                     Text(
-                                        text = "${uiState.results.size} items found",
+                                        text = "${uiState.results.size} items",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -132,12 +126,12 @@ fun SearchScreen(
         if (showBottomSheet && selectedNode != null) {
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                tonalElevation = 0.dp
             ) {
-                FileDetailsContent(
+                com.ivarna.adirstat.presentation.common.components.FileDetailsBottomSheet(
                     file = selectedNode!!,
-                    onDismiss = { showBottomSheet = false },
                     onOpen = { path -> FileActions.openFile(context, path) },
                     onShare = { path -> FileActions.shareFile(context, path) },
                     onDelete = { path -> FileActions.deleteFile(context, path); showBottomSheet = false }
@@ -150,26 +144,8 @@ fun SearchScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchTopBar(onBack: () -> Unit) {
-    TopAppBar(
-        title = {
-            Text(
-                text = "Search Files",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.primary)
-            }
-        },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.MoreVert, null, tint = MaterialTheme.colorScheme.primary)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
+    AdirstatTopBar(
+        title = "Search Files"
     )
 }
 
@@ -182,12 +158,12 @@ private fun SearchInputSection(
     onToggleRegex: () -> Unit,
     onToggleWildcard: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
             placeholder = { Text("Search files and folders...", color = MaterialTheme.colorScheme.outline) },
-            leadingIcon = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.outline) },
+            leadingIcon = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary) },
             trailingIcon = {
                 if (query.isNotEmpty()) {
                     IconButton(onClick = { onQueryChange("") }) {
@@ -196,12 +172,12 @@ private fun SearchInputSection(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            shape = CircleShape,
+            shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color.Transparent
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
             ),
             singleLine = true
         )
@@ -216,8 +192,13 @@ private fun SearchInputSection(
 @Composable
 private fun ToggleChip(label: String, icon: ImageVector, isActive: Boolean, onClick: () -> Unit) {
     Surface(
-        color = if (isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-        shape = RoundedCornerShape(8.dp),
+        color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceContainerLowest,
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(
+            1.dp, 
+            if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) 
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        ),
         modifier = Modifier.clickable(onClick = onClick)
     ) {
         Row(
@@ -225,8 +206,18 @@ private fun ToggleChip(label: String, icon: ImageVector, isActive: Boolean, onCl
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Icon(icon, null, modifier = Modifier.size(16.dp), tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(label, style = MaterialTheme.typography.labelMedium, color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            Icon(
+                imageVector = icon, 
+                contentDescription = null, 
+                modifier = Modifier.size(16.dp), 
+                tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = label, 
+                style = MaterialTheme.typography.labelMedium, 
+                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, 
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -237,185 +228,103 @@ private fun SearchFilterChips() {
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        FilterPill("All", isActive = true)
-        FilterPillWithColor("Images", SemanticColors.Images, isActive = false)
-        FilterPillWithColor("Videos", SemanticColors.Videos, isActive = false)
-        FilterPillWithColor("Audio", SemanticColors.Audio, isActive = false)
-        FilterPillWithColor("Docs", SemanticColors.Documents, isActive = false)
-        FilterPillWithColor("APKs", SemanticColors.Apk, isActive = false)
+        FilterChipMinimal("All", isActive = true)
+        FilterChipMinimal("Images", isActive = false)
+        FilterChipMinimal("Videos", isActive = false)
+        FilterChipMinimal("Audio", isActive = false)
+        FilterChipMinimal("Docs", isActive = false)
     }
 }
 
 @Composable
-private fun FilterPill(label: String, isActive: Boolean) {
+private fun FilterChipMinimal(label: String, isActive: Boolean) {
     Surface(
-        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = CircleShape,
-        shadowElevation = if (isActive) 4.dp else 0.dp
+        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerLowest,
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(
+            1.dp, 
+            if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f) 
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        )
     ) {
         Text(
             text = label,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold
         )
     }
 }
 
 @Composable
-private fun FilterPillWithColor(label: String, color: Color, isActive: Boolean) {
+private fun SearchResultItem(file: FileNode, onClick: () -> Unit) {
     Surface(
-        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = CircleShape,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Circle, // Simple dot
-                contentDescription = null,
-                modifier = Modifier.size(8.dp),
-                tint = color
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold
+        Column {
+            Row(
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = when {
+                            file is FileNode.Directory -> Icons.Default.Folder
+                            else -> Icons.Default.Description
+                        },
+                        contentDescription = null,
+                        tint = when {
+                            file is FileNode.Directory -> MaterialTheme.colorScheme.primary
+                            else -> getFileColor((file as? FileNode.File)?.extension)
+                        },
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = file.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = FileSizeFormatter.format(file.sizeBytes),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+                
+                Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.size(20.dp))
+            }
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 80.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f)
             )
         }
     }
 }
 
 @Composable
-private fun SearchResultItem(file: FileNode, onClick: () -> Unit) {
-    val isLow = file.path.length % 2 == 0 // Just to alternate backgrounds as in design
-    
-    Surface(
-        color = if (isLow) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainerLowest,
-        shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = when {
-                            file is FileNode.Directory -> Icons.Default.Folder
-                            else -> Icons.Default.InsertDriveFile
-                        },
-                        contentDescription = null,
-                        tint = when {
-                            file is FileNode.Directory -> Color(0xFF607D8B)
-                            else -> getFileColor((file as? FileNode.File)?.extension)
-                        }
-                    )
-                }
-            }
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = file.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = file.path,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = if (file is FileNode.Directory) "FOLDER" else FileSizeFormatter.format(file.sizeBytes),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = if (file is FileNode.Directory) "DIRECTORY" else ((file as? FileNode.File)?.extension?.uppercase() ?: "FILE"),
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = MaterialTheme.colorScheme.outline,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-            }
-        }
-    }
-}
-
 private fun getFileColor(extension: String?) = when (extension?.lowercase()) {
     in listOf("jpg", "jpeg", "png", "gif", "bmp", "webp", "heic") -> SemanticColors.Images
     in listOf("mp4", "mkv", "avi", "mov", "wmv", "flv") -> SemanticColors.Videos
     in listOf("mp3", "wav", "ogg", "flac", "aac", "m4a") -> SemanticColors.Audio
     in listOf("pdf", "doc", "docx", "txt", "rtf", "odt") -> SemanticColors.Documents
     in listOf("apk") -> SemanticColors.Apk
-    else -> SemanticColors.SystemOther
-}
-
-@Composable
-private fun SearchBottomBar() {
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(88.dp),
-        color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        shadowElevation = 16.dp
-    ) {
-        Box(modifier = Modifier.fillMaxSize().blur(16.dp).background(MaterialTheme.colorScheme.background.copy(alpha = 0.4f)))
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(Icons.Default.Dashboard, "Overview", false)
-            BottomNavItem(Icons.Default.FolderOpen, "Files", false)
-            BottomNavItem(Icons.Default.Search, "Search", true)
-            BottomNavItem(Icons.Default.AutoFixHigh, "Clean", false)
-            BottomNavItem(Icons.Default.VerifiedUser, "Secure", false)
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(icon: ImageVector, label: String, isActive: Boolean) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (isActive) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent)
-            .padding(vertical = 8.dp, horizontal = 16.dp)
-    ) {
-        Icon(
-            icon,
-            null,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else Color(0xFF607D8B),
-            modifier = Modifier.size(24.dp)
-        )
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isActive) MaterialTheme.colorScheme.primary else Color(0xFF607D8B),
-            fontWeight = FontWeight.Bold
-        )
-    }
+    else -> MaterialTheme.colorScheme.primary
 }
 
 @Composable
@@ -448,43 +357,5 @@ private fun EmptySearchState(isLoading: Boolean, hasIndexedFiles: Boolean) {
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-@Composable
-private fun FileDetailsContent(
-    file: FileNode,
-    onDismiss: () -> Unit,
-    onOpen: (String) -> Unit,
-    onShare: (String) -> Unit,
-    onDelete: (String) -> Unit
-) {
-    Column(Modifier.fillMaxWidth().padding(32.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        Column {
-            Text(file.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("Size: ${FileSizeFormatter.format(file.sizeBytes)}", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
-        }
-        
-        Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-            Text(file.path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
-        }
-
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(onClick = { onOpen(file.path) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(50)) {
-                Icon(Icons.Default.OpenInNew, null); Spacer(Modifier.width(8.dp)); Text("OPEN")
-            }
-            OutlinedButton(onClick = { onShare(file.path) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(50)) {
-                Icon(Icons.Default.Share, null); Spacer(Modifier.width(8.dp)); Text("SHARE")
-            }
-        }
-        
-        Button(
-            onClick = { onDelete(file.path) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-            shape = RoundedCornerShape(50)
-        ) {
-            Icon(Icons.Default.Delete, null); Spacer(Modifier.width(8.dp)); Text("DELETE")
-        }
     }
 }

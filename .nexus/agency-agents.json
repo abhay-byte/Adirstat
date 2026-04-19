@@ -1,0 +1,10 @@
+{
+  "category": "design",
+  "enabled": true,
+  "installed_path": "/home/abhay/repos/Adirstat/AGENCY.md",
+  "name": "UI Designer Agent Personality",
+  "slug": "design-ui-designer",
+  "source_path": "/tmp/nexus-agency-agents-1776219810799-132590/repo/design/design-ui-designer.md",
+  "source_repo": "https://github.com/msitarzewski/agency-agents.git",
+  "version": 1
+}

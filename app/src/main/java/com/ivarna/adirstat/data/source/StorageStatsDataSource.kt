@@ -79,58 +79,55 @@ class StorageStatsDataSource @Inject constructor(
         val userHandle = Process.myUserHandle()
         val apps = mutableListOf<AppStorageInfoBytes>()
 
-        // Get all installed packages including system apps
-        val installedPackages = try {
-            packageManager.getInstalledPackages(PackageManager.GET_META_DATA)
+        // Get all installed applications (faster than getInstalledPackages)
+        val installedApps = try {
+            packageManager.getInstalledApplications(0)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get installed packages", e)
+            Log.e(TAG, "Failed to get installed applications", e)
             return AppStorageResult(apps = emptyList(), isPermissionMissing = false)
         }
         
-        Log.d(TAG, "Querying stats for ${installedPackages.size} packages")
+        Log.d(TAG, "Querying stats for ${installedApps.size} applications")
 
-        for (pkg in installedPackages) {
+        for (appInfo in installedApps) {
             try {
                 val stats = storageStatsManager.queryStatsForPackage(
                     StorageManager.UUID_DEFAULT,  // internal storage UUID
-                    pkg.packageName,
+                    appInfo.packageName,
                     userHandle
                 )
 
                 val appName = try {
-                    pkg.applicationInfo?.loadLabel(packageManager)?.toString() ?: pkg.packageName
+                    appInfo.loadLabel(packageManager).toString()
                 } catch (e: Exception) {
-                    pkg.packageName
+                    appInfo.packageName
                 }
 
                 apps.add(AppStorageInfoBytes(
-                    packageName = pkg.packageName,
+                    packageName = appInfo.packageName,
                     appName = appName,
                     apkBytes = stats.appBytes,
                     dataBytes = stats.dataBytes,
                     cacheBytes = stats.cacheBytes,
                     totalBytes = stats.appBytes + stats.dataBytes + stats.cacheBytes,
-                    isSystemApp = (pkg.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0
+                    isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
                 ))
-
-                Log.d(TAG, "${pkg.packageName}: apk=${stats.appBytes} data=${stats.dataBytes} cache=${stats.cacheBytes}")
-
             } catch (e: PackageManager.NameNotFoundException) {
-                // Package removed between listing and querying — skip silently
+                // Application removed between listing and querying — skip silently
             } catch (e: IOException) {
-                Log.w(TAG, "IOException for ${pkg.packageName}: ${e.message}")
+                Log.w(TAG, "IOException for ${appInfo.packageName}: ${e.message}")
                 // App may be on different volume or unavailable — include with APK size only
-                val apkFile = pkg.applicationInfo?.sourceDir?.let { File(it) }
+                val apkFile = appInfo.sourceDir?.let { File(it) }
                 if (apkFile?.exists() == true) {
                     apps.add(AppStorageInfoBytes(
-                        packageName = pkg.packageName,
-                        appName = try { pkg.applicationInfo?.loadLabel(packageManager)?.toString() ?: pkg.packageName }
-                                  catch (e2: Exception) { pkg.packageName },
+                        packageName = appInfo.packageName,
+                        appName = try { appInfo.loadLabel(packageManager).toString() }
+                                  catch (e2: Exception) { appInfo.packageName },
                         apkBytes = apkFile.length(),
                         dataBytes = 0L,
                         cacheBytes = 0L,
                         totalBytes = apkFile.length(),
-                        isSystemApp = (pkg.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_SYSTEM != 0,
+                        isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
                         isPartialData = true
                     ))
                 }

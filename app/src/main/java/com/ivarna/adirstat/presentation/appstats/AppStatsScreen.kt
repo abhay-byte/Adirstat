@@ -5,8 +5,6 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,21 +14,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivarna.adirstat.data.source.InstalledAppStorageInfo
+import com.ivarna.adirstat.presentation.common.components.AdirstatTopBar
 import com.ivarna.adirstat.presentation.theme.*
 import com.ivarna.adirstat.util.FileSizeFormatter
+
+import androidx.compose.animation.core.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +47,7 @@ fun AppStatsScreen(
     
     Scaffold(
         topBar = {
-            AppStatsTopBar(onBack = onNavigateBack)
+            AppStatsTopBar()
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -55,22 +55,19 @@ fun AppStatsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Total Managed Capacity Card
-            TotalManagedCapacityCard(uiState)
+            if (uiState.isLoading) {
+                LoadingSummaryCardShimmer()
+            } else {
+                TotalManagedCapacityCard(uiState)
+            }
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            // Category Filter Row
-            CategoryFilterRow()
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // App Catalog Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -79,38 +76,48 @@ fun AppStatsScreen(
                 Text(
                     text = "App Catalog",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.primary
                 )
-                Text(
-                    text = "SORTED BY SIZE",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
+                if (!uiState.isLoading) {
+                    Text(
+                        text = "SORTED BY SIZE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // App List
-            when {
-                uiState.isLoading -> LoadingIndicator()
-                uiState.apps.isEmpty() -> EmptyAppsState()
-                else -> {
-                    uiState.apps.forEachIndexed { index, app ->
-                        AppCatalogItem(
-                            app = app,
-                            isLow = index % 2 == 0,
-                            onClick = {
-                                try {
-                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                        data = Uri.parse("package:${app.packageName}")
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                shape = RoundedCornerShape(24.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+            ) {
+                Column {
+                    when {
+                        uiState.isLoading -> {
+                            repeat(6) { AppCatalogItemShimmer() }
+                        }
+                        uiState.apps.isEmpty() -> EmptyAppsState()
+                        else -> {
+                            uiState.apps.forEach { app ->
+                                AppCatalogItem(
+                                    app = app,
+                                    onClick = {
+                                        try {
+                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data = Uri.parse("package:${app.packageName}")
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {}
                                     }
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {}
+                                )
                             }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
                 }
             }
@@ -122,32 +129,81 @@ fun AppStatsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppStatsTopBar(onBack: () -> Unit) {
-    TopAppBar(
-        title = {
-            Text(
-                text = "Apps Storage",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
+private fun AppStatsTopBar() {
+    AdirstatTopBar(
+        title = "Apps Storage"
     )
+}
+
+@Composable
+fun shimmerBrush(): Brush {
+    val shimmerColors = listOf(
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f),
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f),
+    )
+
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+
+    return Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim.value, y = translateAnim.value)
+    )
+}
+
+@Composable
+private fun LoadingSummaryCardShimmer() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(shimmerBrush())
+    )
+}
+
+@Composable
+private fun AppCatalogItemShimmer() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp, horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(shimmerBrush())
+        )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerBrush())
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.3f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerBrush())
+            )
+        }
+    }
 }
 
 @Composable
@@ -155,68 +211,55 @@ private fun TotalManagedCapacityCard(uiState: AppStatsUiState) {
     val totalGB = String.format("%.1f", (uiState.totalAppSize + uiState.totalDataSize + uiState.totalCacheSize).toDouble() / (1024 * 1024 * 1024))
     
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(32.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.04f),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Box(modifier = Modifier.padding(32.dp)) {
-            // Background blur decoration
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 48.dp, y = (-48).dp)
-                    .size(192.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), CircleShape)
-                    .blur(48.dp)
+        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Text(
+                text = "TOTAL MANAGED CAPACITY",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp
             )
             
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "TOTAL MANAGED CAPACITY",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
+                    text = totalGB,
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 56.sp),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Black
                 )
-                
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = totalGB,
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 48.sp),
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Black
-                    )
-                    Text(
-                        text = "GB",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(bottom = 8.dp),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Multi-segment Bar
-                val total = (uiState.totalAppSize + uiState.totalDataSize + uiState.totalCacheSize).toFloat().coerceAtLeast(1f)
-                val appWeight = (uiState.totalAppSize / total).coerceAtLeast(0.01f)
-                val dataWeight = (uiState.totalDataSize / total).coerceAtLeast(0.01f)
-                val cacheWeight = (uiState.totalCacheSize / total).coerceAtLeast(0.01f)
+                Text(
+                    text = "GB",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            val total = (uiState.totalAppSize + uiState.totalDataSize + uiState.totalCacheSize).toFloat().coerceAtLeast(1f)
+            val appWeight = (uiState.totalAppSize / total).coerceAtLeast(0.01f)
+            val dataWeight = (uiState.totalDataSize / total).coerceAtLeast(0.01f)
+            val cacheWeight = (uiState.totalCacheSize / total).coerceAtLeast(0.01f)
+            
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(12.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 ) {
                     Box(modifier = Modifier.weight(appWeight).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
                     Box(modifier = Modifier.weight(dataWeight).fillMaxHeight().background(SemanticColors.Images))
                     Box(modifier = Modifier.weight(cacheWeight).fillMaxHeight().background(SemanticColors.Documents))
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     LegendItemSmall(MaterialTheme.colorScheme.primary, "APK")
                     LegendItemSmall(SemanticColors.Images, "DATA")
                     LegendItemSmall(SemanticColors.Documents, "CACHE")
@@ -230,169 +273,75 @@ private fun TotalManagedCapacityCard(uiState: AppStatsUiState) {
 private fun LegendItemSmall(color: Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-private fun CategoryFilterRow() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        FilterPill("Total", isActive = true)
-        FilterPill("APK", isActive = false)
-        FilterPill("Data", isActive = false)
-        FilterPill("Cache", isActive = false)
-    }
-}
-
-@Composable
-private fun FilterPill(label: String, isActive: Boolean) {
-    Surface(
-        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
-        shape = CircleShape,
-        shadowElevation = if (isActive) 4.dp else 0.dp
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Bold
-        )
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
 private fun AppCatalogItem(
-    app: InstalledAppStorageInfo,
-    isLow: Boolean,
+    app: com.ivarna.adirstat.data.source.AppStorageInfoBytes,
     onClick: () -> Unit
 ) {
     Surface(
-        color = if (isLow) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainerLowest,
-        shape = RoundedCornerShape(24.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.size(48.dp)
+        Column {
+            Row(
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Android,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val context = LocalContext.current
+                    val icon = remember(app.packageName) {
+                        try {
+                            context.packageManager.getApplicationIcon(app.packageName)
+                        } catch (e: Exception) { null }
+                    }
+                    if (icon != null) {
+                        androidx.compose.ui.viewinterop.AndroidView(
+                            factory = { ctx ->
+                                android.widget.ImageView(ctx).apply {
+                                    setImageDrawable(icon)
+                                }
+                            },
+                            modifier = Modifier.size(32.dp)
+                        )
+                    } else {
+                        Icon(Icons.Default.Android, null, tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
-            }
-            
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = app.appName,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = FileSizeFormatter.format(app.totalSize),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontSize = 18.sp),
+                        text = FileSizeFormatter.format(app.totalBytes),
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.ExtraBold
                     )
                 }
                 
-                Text(
-                    text = app.packageName.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Detailed breakdown bar for app
-                val total = (app.apkSize + app.dataSize + app.cacheSize).toFloat().coerceAtLeast(1f)
-                val apkWeight = (app.apkSize / total).coerceAtLeast(0.01f)
-                val dataWeight = (app.dataSize / total).coerceAtLeast(0.01f)
-                val cacheWeight = (app.cacheSize / total).coerceAtLeast(0.01f)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                ) {
-                    Box(modifier = Modifier.weight(apkWeight).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
-                    Box(modifier = Modifier.weight(dataWeight).fillMaxHeight().background(SemanticColors.Images))
-                    Box(modifier = Modifier.weight(cacheWeight).fillMaxHeight().background(SemanticColors.Documents))
-                }
+                Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.size(20.dp))
             }
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 80.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f)
+            )
         }
-    }
-}
-
-@Composable
-private fun AppStatsBottomBar() {
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(88.dp),
-        color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        shadowElevation = 16.dp
-    ) {
-        Box(modifier = Modifier.fillMaxSize().blur(16.dp).background(MaterialTheme.colorScheme.background.copy(alpha = 0.4f)))
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BottomNavItem(Icons.Default.Dashboard, "Dashboard", false)
-            BottomNavItem(Icons.Default.Apps, "Apps", true)
-            BottomNavItem(Icons.Default.History, "History", false)
-            BottomNavItem(Icons.Default.Settings, "Settings", false)
-        }
-    }
-}
-
-@Composable
-private fun BottomNavItem(icon: ImageVector, label: String, isActive: Boolean) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (isActive) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent)
-            .padding(vertical = 8.dp, horizontal = 16.dp)
-    ) {
-        Icon(
-            icon,
-            null,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else Color(0xFF607D8B),
-            modifier = Modifier.size(24.dp)
-        )
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isActive) MaterialTheme.colorScheme.primary else Color(0xFF607D8B),
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
